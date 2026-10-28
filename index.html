@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213D">
+<title>會議工作流程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF2F4; --surface:#FFFFFF; --ink:#14213D; --muted:#5B6878; --line:#D5DDE3;
+  --accent:#0F7B8A; --accent-ink:#FFFFFF; --live:#F2B705; --live-ink:#14213D; --past:#9AA6B2; --danger:#B3261E;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1620; --surface:#172231; --ink:#E8EEF2; --muted:#9AA9B8; --line:#2A3748;
+    --accent:#3FC1CF; --accent-ink:#0E1620; --live:#F5C842; --live-ink:#0E1620; --past:#5E6B7A; --danger:#F2867E;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1620; --surface:#172231; --ink:#E8EEF2; --muted:#9AA9B8; --line:#2A3748;
+  --accent:#3FC1CF; --accent-ink:#0E1620; --live:#F5C842; --live-ink:#0E1620; --past:#5E6B7A; --danger:#F2867E;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.num{font-family:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-row{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px 6px}
+.event{flex:1;min-width:0;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clock{font-size:26px;font-weight:600;letter-spacing:.02em;line-height:1;background:none;border:0;padding:4px 0}
+.clock.sim{color:var(--accent)}
+.sim-badge{font-size:12px;font-weight:700;background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:2px 6px;display:none}
+.clock.sim + .sim-badge{display:inline-block}
+.staff{max-width:640px;margin:0 auto;display:flex;gap:8px;overflow-x:auto;padding:4px 16px 12px;scrollbar-width:none}
+.staff::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:6px 14px;font-size:15px;line-height:1.2;text-align:left}
+.chip small{display:block;font-size:11px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip[aria-pressed="true"] small{color:var(--bg);opacity:.75}
+
+main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+.card{background:var(--surface);border-radius:14px;padding:20px;margin-bottom:16px;border:1px solid var(--line)}
+.now{border-left:8px solid var(--past);touch-action:pan-y}
+.now.is-live{border-left-color:var(--live)}
+.now.is-next{border-left-color:var(--accent)}
+.status{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:2px 8px;background:var(--line);color:var(--ink)}
+.is-live .status{background:var(--live);color:var(--live-ink)}
+.is-next .status{background:var(--accent);color:var(--accent-ink)}
+.pos{float:right;font-size:14px;color:var(--muted)}
+.task-title{font-size:26px;line-height:1.3;margin:10px 0 6px;font-weight:700}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:16px;margin:0}
+.meta dt{color:var(--muted)}
+.meta dd{margin:0;font-weight:500}
+.count{margin-top:18px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.count .big{font-size:56px;font-weight:700;line-height:.95}
+.count .lbl{color:var(--muted);font-size:15px}
+.bar{height:6px;border-radius:3px;background:var(--line);margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--live);width:0}
+.note{margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--bg);font-size:15px;white-space:pre-wrap}
+.nav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin-top:18px}
+.btn{border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:10px 12px;font-size:15px;font-weight:500}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.nav .btn:last-child{text-align:right}
+
+h2{font-size:17px;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sess{display:grid;grid-template-columns:5.2em 1fr;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
+.sess:first-of-type{border-top:0;padding-top:0}
+.sess .t{color:var(--muted);font-size:15px}
+.sess b{font-weight:700;display:block}
+.sess span{color:var(--muted);font-size:14px}
+.sess em{font-style:normal;color:var(--ink);font-weight:700;background:var(--live);color:var(--live-ink);border-radius:4px;padding:0 6px;font-size:13px;margin-left:6px}
+.empty{color:var(--muted);margin:0}
+
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:flex;align-items:stretch;border-top:1px solid var(--line)}
+.tl li:first-child{border-top:0}
+.tl .row{flex:1;display:grid;grid-template-columns:5.2em 1fr;gap:0 12px;text-align:left;background:none;border:0;padding:10px 4px;border-radius:8px}
+.tl .row .t{font-size:17px;font-weight:600;color:var(--muted)}
+.tl .row b{font-weight:500;display:block}
+.tl .row span{font-size:14px;color:var(--muted)}
+.tl li.past .row b,.tl li.past .row .t{color:var(--past)}
+.tl li.live .row .t{color:var(--ink)}
+.tl li.live .row b{font-weight:700}
+.tl li.live .row{box-shadow:inset 4px 0 0 var(--live)}
+.tl li.viewing .row{background:var(--bg)}
+.edit{background:none;border:0;color:var(--accent);font-size:14px;padding:0 6px;font-weight:700}
+
+
+dialog{border:0;border-radius:14px;padding:0;width:min(92vw,460px);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(10,20,30,.55)}
+.dlg{padding:20px;display:grid;gap:12px}
+.dlg h3{margin:0;font-size:18px}
+.dlg label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
+.dlg input,.dlg select,.dlg textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.dlg .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dlg .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dlg .acts .spacer{flex:1}
+.msg{font-size:14px;color:var(--danger);min-height:1em;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+
+.sub{font-size:12px;color:var(--muted);font-weight:400;display:flex;gap:8px;align-items:center}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-size:12px;font-weight:700}
+.titles{flex:1;min-width:0}
+.warn{background:var(--live);color:var(--live-ink);border-radius:8px;padding:8px 12px;font-size:14px;margin-bottom:16px}
+.setup p{font-size:15px}
+.setup input{font:inherit;font-size:16px;width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.setup .out{word-break:break-all;background:var(--bg);padding:8px 10px;border-radius:8px;font-size:14px;margin:10px 0}
+a.btn{text-decoration:none;display:inline-block}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row">
+    <div class="titles">
+      <div class="event" id="eventName">會議工作流程</div>
+      <div class="sub"><span id="syncState">尚未讀取</span><button class="linkbtn" id="refreshBtn" type="button">更新</button></div>
+    </div>
+    <button class="clock num" id="clock" type="button" title="設定模擬時間">--:--:--</button>
+    <span class="sim-badge">模擬</span>
+  </div>
+  <nav class="staff" id="staff" aria-label="選擇工作人員"></nav>
+</header>
+
+<main id="app">
+  <div class="warn" id="warn" hidden></div>
+  <section class="card now" id="now" aria-live="polite"><p class="empty">正在讀取工作流程…</p></section>
+  <section class="card" id="venue"></section>
+  <section class="card">
+    <h2><span id="tlTitle">全天流程</span><a class="btn" id="editLink" target="_blank" rel="noopener" hidden>修改流程</a></h2>
+    <ol class="tl" id="timeline"></ol>
+  </section>
+</main>
+
+<main id="setup" class="setup" hidden>
+  <section class="card">
+    <h2>設定資料來源</h2>
+    <p>貼上 Google 試算表的網址。試算表需要設定為「知道連結的任何人都能檢視」。</p>
+    <input id="sheetUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/…/edit" autocomplete="off">
+    <p class="msg" id="setupMsg"></p>
+    <button class="btn primary" id="makeLink" type="button">產生工作人員連結</button>
+    <div id="linkOut" hidden>
+      <p>把這個連結傳給工作人員（加入書籤或加到主畫面）：</p>
+      <div class="out" id="linkText"></div>
+      <button class="btn" id="copyLink" type="button">複製連結</button>
+      <a class="btn primary" id="openLink">開啟</a>
+    </div>
+  </section>
+</main>
+
+<dialog id="simDlg">
+  <form class="dlg" method="dialog" id="simForm">
+    <h3>模擬時間</h3>
+    <p style="margin:0;font-size:14px;color:var(--muted)">會前測試用：假裝現在是某個時間點，只影響這支手機。</p>
+    <label>日期與時間<input type="datetime-local" id="simInput"></label>
+    <div class="acts">
+      <button type="button" class="btn" id="simReset">恢復實際時間</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" data-close>取消</button>
+      <button type="submit" class="btn primary">套用</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ===== 設定 =====
+   SHEET_ID：Google 試算表網址中 /d/ 與 /edit 之間那一串。
+   留空也可以，改用網址參數 ?sheet=試算表ID 指定。                */
+const CONFIG = {
+  SHEET_ID: '',
+  EVENT_NAME: '會議工作流程',
+  REFRESH_SECONDS: 60
+};
+
+(function(){
+  const $ = s => document.querySelector(s);
+  const store = {
+    get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+    set(k,v){ try { v==null ? localStorage.removeItem(k) : localStorage.setItem(k,v); } catch(e){} }
+  };
+  const params = new URLSearchParams(location.search);
+  const SHEET_ID = (CONFIG.SHEET_ID || params.get('sheet') || '').trim();
+
+  let staff = [], tasks = [], sessions = [], eventName = CONFIG.EVENT_NAME;
+  let loaded = false, skipped = 0, lastSync = 0;
+  let sel = params.get('who') || store.get('sel');
+  let viewIdx = null, lastAuto = -2;
+  let simOffset = Number(store.get('sim')) || 0;
+
+  const now = () => Date.now() + simOffset;
+  const pad = n => String(n).padStart(2,'0');
+  const parse = s => { const [d,t] = s.split('T'); const [y,m,da] = d.split('-').map(Number); const [h,mi] = t.split(':').map(Number); return new Date(y,m-1,da,h,mi).getTime(); };
+  const hm = s => s.split('T')[1];
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const clockStr = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  function bigDur(ms){ const s = Math.max(0, Math.floor(ms/1000)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return h ? `${h}:${pad(m)}:${pad(x)}` : `${pad(m)}:${pad(x)}`; }
+  function wordDur(ms){ const m = Math.max(0, Math.ceil(ms/60000)); const h = Math.floor(m/60); return h ? `${h} 小時 ${m%60} 分` : `${m} 分鐘`; }
+  function toast(t){ const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(()=>e.classList.remove('show'), 2200); }
+
+  /* ---------- 設定畫面（沒有試算表 ID 時） ---------- */
+  if (!SHEET_ID){
+    $('#app').hidden = true; $('#setup').hidden = false; $('#staff').hidden = true;
+    $('#syncState').textContent = '尚未設定資料來源'; $('#refreshBtn').hidden = true;
+    $('#makeLink').onclick = () => {
+      const m = $('#sheetUrl').value.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || $('#sheetUrl').value.trim().match(/^([a-zA-Z0-9_-]{20,})$/);
+      if (!m){ $('#setupMsg').textContent = '看不出試算表 ID，請貼上完整的試算表網址。'; return; }
+      $('#setupMsg').textContent = '';
+      const link = `${location.origin}${location.pathname}?sheet=${m[1]}`;
+      $('#linkText').textContent = link; $('#openLink').href = link; $('#linkOut').hidden = false;
+      $('#copyLink').onclick = () => navigator.clipboard.writeText(link).then(() => toast('已複製連結'), () => toast('無法自動複製，請手動選取'));
+    };
+    setInterval(renderClock, 1000); renderClock(); bindSim();
+    return;
+  }
+
+  /* ---------- 讀取 Google 試算表 ---------- */
+  function parseCSV(text){
+    const rows = []; let row = [], f = '', q = false;
+    for (let i = 0; i < text.length; i++){
+      const c = text[i];
+      if (q){ if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+      else if (c === '"') q = true;
+      else if (c === ','){ row.push(f); f = ''; }
+      else if (c === '\n' || c === '\r'){ if (c === '\r' && text[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+      else f += c;
+    }
+    if (f !== '' || row.length){ row.push(f); rows.push(row); }
+    return rows;
+  }
+  function toObjects(rows){
+    if (!rows.length) return [];
+    const head = rows[0].map(h => h.trim());
+    return rows.slice(1).filter(r => r.some(v => v.trim() !== '')).map(r => { const o = {}; head.forEach((h,i) => o[h] = (r[i] || '').trim()); return o; });
+  }
+  function normDate(s){
+    let m = s.match(/(\d{4})\s*[\/\-.年]\s*(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})/); if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if (m) return `${m[3]}-${pad(m[1])}-${pad(m[2])}`;
+    return null;
+  }
+  function normTime(s){
+    const m = s.match(/(\d{1,2})[:：](\d{2})/); if (!m) return null;
+    let h = +m[1]; if (/下午|晚上|PM|pm/.test(s) && h < 12) h += 12; if (/上午|凌晨|AM|am/.test(s) && h === 12) h = 0;
+    return h < 24 ? `${pad(h)}:${m[2]}` : null;
+  }
+  function slot(r){
+    const d = normDate(r['日期'] || ''), s = normTime(r['開始'] || ''), e = normTime(r['結束'] || '');
+    if (!d || !s || !e) return null; return { start: `${d}T${s}`, end: `${d}T${e}` };
+  }
+  async function fetchSheet(name){
+    const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(name)}&_=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('http');
+    const text = await res.text();
+    if (/^\s*</.test(text)) throw new Error('private');
+    return toObjects(parseCSV(text));
+  }
+  function apply(raw){
+    skipped = 0;
+    const settings = raw.settings || [];
+    const nameRow = settings.find(r => r['項目'] === '會議名稱');
+    eventName = (nameRow && nameRow['內容']) || CONFIG.EVENT_NAME;
+    staff = (raw.staff || []).filter(r => r['姓名']).map(r => ({ name: r['姓名'], role: r['組別'] || '' }));
+    sessions = [];
+    (raw.sessions || []).forEach(r => { const t = slot(r); if (t && r['議程']) sessions.push(Object.assign(t, { title: r['議程'], place: r['地點'] || '' })); else skipped++; });
+    tasks = [];
+    (raw.tasks || []).forEach(r => { const t = slot(r); if (t && r['工作人員'] && r['任務']) tasks.push(Object.assign(t, { staff: r['工作人員'], title: r['任務'], place: r['地點'] || '', note: r['備註'] || '' })); else skipped++; });
+    tasks.forEach(t => { if (!staff.some(s => s.name === t.staff)) staff.push({ name: t.staff, role: '' }); });
+    if (!sel || !staff.some(s => s.name === sel)) sel = staff[0] ? staff[0].name : null;
+    loaded = true; lastAuto = -2;
+  }
+  let loading = false;
+  async function load(manual){
+    if (loading) return; loading = true;
+    $('#syncState').textContent = '讀取中…';
+    try {
+      const [settings, st, se, ta] = await Promise.all([
+        fetchSheet('settings').catch(() => []), fetchSheet('staff'), fetchSheet('sessions'), fetchSheet('tasks')
+      ]);
+      const raw = { settings, staff: st, sessions: se, tasks: ta };
+      apply(raw); lastSync = Date.now();
+      store.set('cache:' + SHEET_ID, JSON.stringify({ at: lastSync, raw }));
+      setWarn(skipped ? `試算表中有 ${skipped} 列的日期、時間或必填欄位格式不正確，已略過。` : '');
+      if (manual) toast('已更新');
+    } catch(err){
+      if (!loaded){
+        const c = store.get('cache:' + SHEET_ID);
+        if (c){ try { const o = JSON.parse(c); apply(o.raw); lastSync = o.at; } catch(e){} }
+      }
+      setWarn(err.message === 'private'
+        ? '讀不到試算表：請把共用設定改為「知道連結的任何人」可以檢視。'
+        : loaded ? `目前無法連線，顯示的是 ${clockStr(lastSync)} 的資料。` : '無法讀取試算表，請確認網路連線與試算表 ID。');
+    } finally {
+      loading = false;
+      $('#syncState').textContent = lastSync ? `資料更新於 ${clockStr(lastSync)}` : '尚未讀取';
+      renderAll();
+    }
+  }
+  function setWarn(t){ const w = $('#warn'); w.textContent = t; w.hidden = !t; }
+
+  /* ---------- 畫面 ---------- */
+  function myTasks(){ return tasks.filter(t => t.staff === sel).sort((a,b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0); }
+  function autoIndex(list, n){
+    let i = list.findIndex(t => parse(t.start) <= n && n < parse(t.end)); if (i >= 0) return i;
+    i = list.findIndex(t => parse(t.start) > n); if (i >= 0) return i;
+    return list.length - 1;
+  }
+  function stateOf(t, n){ const s = parse(t.start), e = parse(t.end); return n < s ? 'next' : n < e ? 'live' : 'past'; }
+
+  function renderClock(){
+    const d = new Date(now());
+    const c = $('#clock'); c.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    c.classList.toggle('sim', simOffset !== 0);
+  }
+  function renderStaff(){
+    const nav = $('#staff'); nav.replaceChildren();
+    staff.forEach(s => {
+      const b = el('button','chip'); b.type = 'button';
+      b.append(document.createTextNode(s.name)); b.append(el('small', null, s.role));
+      b.setAttribute('aria-pressed', String(s.name === sel));
+      b.onclick = () => { sel = s.name; store.set('sel', sel); viewIdx = null; lastAuto = -2; renderAll(); };
+      nav.append(b);
+    });
+    $('#eventName').textContent = eventName; document.title = eventName;
+  }
+  function renderNow(){
+    const box = $('#now'); const list = myTasks(); const n = now();
+    box.className = 'card now';
+    if (!loaded) return;
+    if (!staff.length){ box.replaceChildren(el('p','empty','試算表裡還沒有工作人員資料。')); return; }
+    if (!list.length){ box.replaceChildren(el('p','empty',`${sel} 目前沒有排定任務。`)); return; }
+    const auto = autoIndex(list, n);
+    const idx = viewIdx == null ? auto : Math.min(Math.max(viewIdx,0), list.length-1);
+    const t = list[idx], st = stateOf(t, n), s = parse(t.start), e = parse(t.end);
+    box.classList.add(st === 'live' ? 'is-live' : st === 'next' ? 'is-next' : 'is-past');
+    const frag = document.createDocumentFragment();
+    const head = el('div');
+    const label = st === 'live' ? '進行中' : st === 'next' ? (idx === auto ? '下一項' : '稍後') : (idx === auto ? '今日任務已完成' : '已結束');
+    head.append(el('span','status',label), el('span','pos num',`${idx+1} / ${list.length}`));
+    frag.append(head, el('h1','task-title', t.title));
+    const dl = el('dl','meta');
+    dl.append(el('dt',null,'地點'), el('dd',null,t.place || '—'), el('dt',null,'時間'), el('dd','num',`${t.start.slice(5,10).replace('-','/')}　${hm(t.start)}–${hm(t.end)}`));
+    frag.append(dl);
+    if (st !== 'past'){
+      const c = el('div','count');
+      c.append(el('span','big num', bigDur(st === 'live' ? e - n : s - n)), el('span','lbl', st === 'live' ? '後結束' : '後開始'));
+      frag.append(c);
+    }
+    if (st === 'live'){ const bar = el('div','bar'); const i = el('i'); i.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%'; bar.append(i); frag.append(bar); }
+    if (t.note) frag.append(el('div','note',t.note));
+    const nav = el('div','nav');
+    const prev = el('button','btn','‹ 上一項'); prev.disabled = idx === 0; prev.onclick = () => go(idx-1);
+    const home = el('button','btn','回到現在'); home.disabled = viewIdx == null || idx === auto; home.onclick = () => { viewIdx = null; renderAll(); };
+    const next = el('button','btn','下一項 ›'); next.disabled = idx === list.length-1; next.onclick = () => go(idx+1);
+    nav.append(prev, home, next); frag.append(nav);
+    box.replaceChildren(frag);
+    box.dataset.idx = idx;
+    if (auto !== lastAuto){ lastAuto = auto; renderTimeline(); }
+  }
+  function go(i){ const list = myTasks(); if (i < 0 || i >= list.length) return; viewIdx = i; renderNow(); renderTimeline(); renderVenue(); }
+
+  function renderVenue(){
+    const box = $('#venue'); const n = now(); const list = myTasks();
+    if (!loaded){ box.replaceChildren(); return; }
+    const sorted = sessions.slice().sort((a,b) => a.start < b.start ? -1 : 1);
+    const idx = Number($('#now').dataset.idx);
+    const viewing = (viewIdx != null && list[idx]) ? list[idx] : null;
+    const frag = document.createDocumentFragment();
+    if (viewing && stateOf(viewing, n) !== 'live'){
+      frag.append(el('h2',null,'這段時間的議程'));
+      const vs = parse(viewing.start), ve = parse(viewing.end);
+      const rows = sorted.filter(x => parse(x.start) < ve && parse(x.end) > vs);
+      if (!rows.length) frag.append(el('p','empty','這段時間沒有排定議程。'));
+      rows.forEach(x => frag.append(sessRow(x, false, n)));
+    } else {
+      frag.append(el('h2',null,'會場現在'));
+      const rows = sorted.filter(x => parse(x.start) <= n && n < parse(x.end));
+      rows.forEach(x => frag.append(sessRow(x, true, n)));
+      const up = sorted.find(x => parse(x.start) > n);
+      if (!rows.length) frag.append(el('p','empty', up ? `目前沒有議程進行。下一場「${up.title}」${wordDur(parse(up.start)-n)}後開始。` : '議程已全部結束。'));
+      else if (up){ const p = el('p','empty',`接著：${hm(up.start)}「${up.title}」`); p.style.marginTop = '10px'; p.style.fontSize = '14px'; frag.append(p); }
+    }
+    box.replaceChildren(frag);
+  }
+  function sessRow(x, live, n){
+    const r = el('div','sess');
+    r.append(el('div','t num',`${hm(x.start)}–${hm(x.end)}`));
+    const d = el('div'); const b = el('b',null,x.title);
+    if (live) b.append(el('em','num',`剩 ${wordDur(parse(x.end)-n)}`));
+    d.append(b, el('span',null,x.place)); r.append(d);
+    return r;
+  }
+  function renderTimeline(){
+    const ol = $('#timeline'); const list = myTasks(); const n = now();
+    $('#tlTitle').textContent = sel ? `${sel}的全天流程` : '全天流程';
+    ol.replaceChildren();
+    const idx = Number($('#now').dataset.idx);
+    let day = null;
+    list.forEach((t,i) => {
+      const d = t.start.slice(0,10);
+      if (d !== day){ day = d; const h = el('li'); h.append(el('span','empty num', d.replace(/-/g,'/'))); h.style.padding = '8px 4px 2px'; h.style.fontSize = '13px'; ol.append(h); }
+      const li = el('li', stateOf(t,n) + (i === idx ? ' viewing' : ''));
+      const row = el('button','row'); row.type = 'button';
+      row.append(el('span','t num',hm(t.start)));
+      const c = el('span'); c.append(el('b',null,t.title), el('span',null,`${t.place}　至 ${hm(t.end)}`)); row.append(c);
+      row.onclick = () => { go(i); window.scrollTo({top:0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); };
+      li.append(row); ol.append(li);
+    });
+    if (!list.length && loaded) ol.append(el('li','empty','沒有任務。'));
+  }
+  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); }
+
+  // 左右滑動切換任務
+  let tx = null;
+  $('#now').addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+  $('#now').addEventListener('touchend', e => {
+    if (tx == null) return; const dx = e.changedTouches[0].clientX - tx; tx = null;
+    if (Math.abs(dx) < 60) return; const i = Number($('#now').dataset.idx); go(dx < 0 ? i+1 : i-1);
+  });
+
+  $('#editLink').href = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/edit`; $('#editLink').hidden = false;
+  $('#refreshBtn').onclick = () => load(true);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastSync > 15000) load(false); });
+  setInterval(() => { if (!document.hidden) load(false); }, CONFIG.REFRESH_SECONDS * 1000);
+  setInterval(() => { renderClock(); renderNow(); renderVenue(); }, 1000);
+  bindSim();
+  // 先顯示上次快取的資料，再向 Google 讀取最新內容
+  const cached = store.get('cache:' + SHEET_ID);
+  if (cached){ try { const o = JSON.parse(cached); apply(o.raw); lastSync = o.at; } catch(e){} }
+  renderAll(); load(false);
+
+  /* ---------- 模擬時間 ---------- */
+  function bindSim(){
+    const simDlg = $('#simDlg');
+    document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+    $('#clock').onclick = () => { const d = new Date(now()); $('#simInput').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; simDlg.showModal(); };
+    $('#simForm').addEventListener('submit', ev => {
+      ev.preventDefault(); const v = $('#simInput').value; if (!v) return;
+      simOffset = parse(v) - Date.now(); store.set('sim', String(simOffset)); viewIdx = null; lastAuto = -2; simDlg.close(); if (SHEET_ID) renderAll(); else renderClock(); toast('已切換為模擬時間');
+    });
+    $('#simReset').onclick = () => { simOffset = 0; store.set('sim', null); viewIdx = null; lastAuto = -2; simDlg.close(); if (SHEET_ID) renderAll(); else renderClock(); toast('已恢復實際時間'); };
+  }
+})();
+</script>
+</body>
+</html>
