@@ -130,6 +130,8 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
 .setup input{font:inherit;font-size:16px;width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 .setup .out{word-break:break-all;background:var(--bg);padding:8px 10px;border-radius:8px;font-size:14px;margin:10px 0}
 a.btn{text-decoration:none;display:inline-block}
+.memo textarea{font:inherit;font-size:16px;line-height:1.6;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-height:9em;resize:vertical}
+.memo .hint{font-size:13px;color:var(--muted);font-weight:400}
 </style>
 </head>
 <body>
@@ -152,6 +154,10 @@ a.btn{text-decoration:none;display:inline-block}
   <section class="card">
     <h2><span id="tlTitle">全天流程</span><a class="btn" id="editLink" target="_blank" rel="noopener" hidden>修改流程</a></h2>
     <ol class="tl" id="timeline"></ol>
+  </section>
+  <section class="card memo" id="memoCard" hidden>
+    <h2><span>我的記事本</span><span class="hint" id="memoState"></span></h2>
+    <textarea id="memo" placeholder="隨手記錄。只存在這支手機的瀏覽器裡，其他人看不到。" aria-label="我的記事本"></textarea>
   </section>
 </main>
 
@@ -333,7 +339,7 @@ const CONFIG = {
     } finally {
       loading = false;
       $('#syncState').textContent = lastSync ? `資料更新於 ${clockStr(lastSync)}` : '尚未讀取';
-      renderAll();
+      renderAll(); maybeAskWho();
     }
   }
   function setWarn(t){ const w = $('#warn'); w.textContent = t; w.hidden = !t; }
@@ -481,13 +487,42 @@ const CONFIG = {
     const dlg = $('#whoDlg'); const list = $('#whoList'); list.replaceChildren();
     staff.forEach(s => {
       const b = el('button','chip'); b.type = 'button'; b.append(document.createTextNode(s.name), el('small',null,s.role));
-      b.onclick = () => { me = s.name; store.set('me', me); dlg.close(); renderMe(); if (then) then(); };
+      b.onclick = () => { me = s.name; store.set('me', me); dlg.close(); renderMe(); renderMemo(); if (then) then(); };
       list.append(b);
     });
     dlg.querySelector('[data-close]').onclick = () => dlg.close();
     dlg.showModal();
   }
-  function renderMe(){ const b = $('#meBtn'); b.hidden = !apiUrl; b.textContent = me ? `我是 ${me}` : '設定我是誰'; }
+  function renderMe(){ const b = $('#meBtn'); b.hidden = !staff.length; b.textContent = me ? `我是 ${me}` : '設定我是誰'; }
+  // 選好「我是誰」後，自動切換到自己的流程
+  const showMine = () => { sel = me; store.set('sel', sel); viewIdx = null; lastAuto = -2; renderAll(); };
+  let askedWho = false;
+  function maybeAskWho(){
+    if (askedWho || me || !staff.length) return;
+    askedWho = true; askWho(showMine);
+  }
+
+  /* ---------- 個人記事本（只存在這支手機） ---------- */
+  let memoTimer = null;
+  const memoKey = () => `memo:${SHEET_ID}:${me}`;
+  function renderMemo(){
+    const card = $('#memoCard');
+    card.hidden = !(me && sel === me);
+    if (!me || card.dataset.owner === me) return;
+    card.dataset.owner = me;
+    $('#memo').value = store.get(memoKey()) || '';
+    $('#memoState').textContent = '';
+  }
+  $('#memo').addEventListener('input', () => {
+    $('#memoState').textContent = '輸入中…';
+    clearTimeout(memoTimer);
+    memoTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(memoKey(), $('#memo').value);
+        const d = new Date(); $('#memoState').textContent = `已儲存 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch(e){ $('#memoState').textContent = '這個瀏覽器無法儲存（可能是無痕模式）'; }
+    }, 500);
+  });
 
   function go(i){ const list = myTasks(); if (i < 0 || i >= list.length) return; viewIdx = i; renderNow(); renderTimeline(); renderVenue(); }
 
@@ -540,7 +575,7 @@ const CONFIG = {
     });
     if (!list.length && loaded) ol.append(el('li','empty','沒有任務。'));
   }
-  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); renderMe(); }
+  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); renderMe(); renderMemo(); }
 
   // 左右滑動切換任務
   let tx = null;
@@ -552,7 +587,7 @@ const CONFIG = {
 
   $('#editLink').href = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/edit`; $('#editLink').hidden = false;
   $('#refreshBtn').onclick = () => load(true);
-  $('#meBtn').onclick = () => askWho(null);
+  $('#meBtn').onclick = () => askWho(showMine);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastSync > 15000) load(false); });
   setInterval(() => { if (!document.hidden) load(false); }, CONFIG.REFRESH_SECONDS * 1000);
   setInterval(() => { renderClock(); renderNow(); renderVenue(); }, 1000);
@@ -560,7 +595,7 @@ const CONFIG = {
   // 先顯示上次快取的資料，再向 Google 讀取最新內容
   const cached = store.get('cache:' + SHEET_ID);
   if (cached){ try { const o = JSON.parse(cached); apply(o.raw); lastSync = o.at; } catch(e){} }
-  renderAll(); load(false);
+  renderAll(); maybeAskWho(); load(false);
 
   /* ---------- 模擬時間 ---------- */
   function bindSim(){
