@@ -69,7 +69,14 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .count .lbl{color:var(--muted);font-size:15px}
 .bar{height:6px;border-radius:3px;background:var(--line);margin-top:12px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--live);width:0}
-.note{margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--bg);font-size:15px;white-space:pre-wrap}
+.note{margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--bg);font-size:15px}
+.note p{margin:0;min-height:1.2em}
+.note strong{font-weight:700}
+.note .chk-head{font-size:13px;color:var(--muted);margin:6px 0 2px}
+.note ul{list-style:none;margin:2px 0;padding:0}
+.note li label{display:flex;align-items:flex-start;gap:10px;padding:6px 0;cursor:pointer}
+.note li input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
+.note li.done .txt{color:var(--muted);text-decoration:line-through}
 .nav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin-top:18px}
 .btn{border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:10px 12px;font-size:15px;font-weight:500}
 .btn:disabled{opacity:.35;cursor:default}
@@ -130,7 +137,7 @@ a.btn{text-decoration:none;display:inline-block}
   <div class="top-row">
     <div class="titles">
       <div class="event" id="eventName">會議工作流程</div>
-      <div class="sub"><span id="syncState">尚未讀取</span><button class="linkbtn" id="refreshBtn" type="button">更新</button></div>
+      <div class="sub"><span id="syncState">尚未讀取</span><button class="linkbtn" id="refreshBtn" type="button">更新</button><button class="linkbtn" id="meBtn" type="button" hidden></button></div>
     </div>
     <button class="clock num" id="clock" type="button" title="設定模擬時間">--:--:--</button>
     <span class="sim-badge">模擬</span>
@@ -164,6 +171,15 @@ a.btn{text-decoration:none;display:inline-block}
   </section>
 </main>
 
+<dialog id="whoDlg">
+  <form class="dlg" method="dialog">
+    <h3>你是哪一位？</h3>
+    <p style="margin:0;font-size:14px;color:var(--muted)">勾選清單時會記錄是誰完成的，所有人都看得到。只需要選一次。</p>
+    <div class="staff" id="whoList" style="flex-wrap:wrap;padding:0"></div>
+    <div class="acts"><button type="button" class="btn" data-close>取消</button></div>
+  </form>
+</dialog>
+
 <dialog id="simDlg">
   <form class="dlg" method="dialog" id="simForm">
     <h3>模擬時間</h3>
@@ -187,7 +203,7 @@ a.btn{text-decoration:none;display:inline-block}
 const CONFIG = {
   SHEET_ID: '',
   EVENT_NAME: '會議工作流程',
-  REFRESH_SECONDS: 60
+  REFRESH_SECONDS: 30
 };
 
 (function(){
@@ -200,6 +216,8 @@ const CONFIG = {
   const SHEET_ID = (CONFIG.SHEET_ID || params.get('sheet') || '').trim();
 
   let staff = [], tasks = [], sessions = [], eventName = CONFIG.EVENT_NAME;
+  let apiUrl = '', checks = {}, checksVer = 0, pending = {};
+  let me = params.get('who') || store.get('me');
   let loaded = false, skipped = 0, lastSync = 0;
   let sel = params.get('who') || store.get('sel');
   let viewIdx = null, lastAuto = -2;
@@ -277,6 +295,11 @@ const CONFIG = {
     const settings = raw.settings || [];
     const nameRow = settings.find(r => r['項目'] === '會議名稱');
     eventName = (nameRow && nameRow['內容']) || CONFIG.EVENT_NAME;
+    const apiRow = settings.find(r => r['項目'] === '勾選同步網址');
+    apiUrl = (apiRow && /^https:\/\/script\.google\.com\//.test(apiRow['內容'])) ? apiRow['內容'] : '';
+    const next = {};
+    (raw.checks || []).forEach(r => { if (r['鍵值']) next[r['鍵值']] = { done: r['已完成'] === '是', by: r['勾選者'] || '', at: r['時間'] || '' }; });
+    if (JSON.stringify(next) !== JSON.stringify(checks)){ checks = next; checksVer++; }
     staff = (raw.staff || []).filter(r => r['姓名']).map(r => ({ name: r['姓名'], role: r['組別'] || '' }));
     sessions = [];
     (raw.sessions || []).forEach(r => { const t = slot(r); if (t && r['議程']) sessions.push(Object.assign(t, { title: r['議程'], place: r['地點'] || '' })); else skipped++; });
@@ -291,10 +314,10 @@ const CONFIG = {
     if (loading) return; loading = true;
     $('#syncState').textContent = '讀取中…';
     try {
-      const [settings, st, se, ta] = await Promise.all([
-        fetchSheet('settings').catch(() => []), fetchSheet('staff'), fetchSheet('sessions'), fetchSheet('tasks')
+      const [settings, st, se, ta, ck] = await Promise.all([
+        fetchSheet('settings').catch(() => []), fetchSheet('staff'), fetchSheet('sessions'), fetchSheet('tasks'), fetchSheet('checks').catch(() => [])
       ]);
-      const raw = { settings, staff: st, sessions: se, tasks: ta };
+      const raw = { settings, staff: st, sessions: se, tasks: ta, checks: ck };
       apply(raw); lastSync = Date.now();
       store.set('cache:' + SHEET_ID, JSON.stringify({ at: lastSync, raw }));
       setWarn(skipped ? `試算表中有 ${skipped} 列的日期、時間或必填欄位格式不正確，已略過。` : '');
@@ -342,14 +365,21 @@ const CONFIG = {
   }
   function renderNow(){
     const box = $('#now'); const list = myTasks(); const n = now();
-    box.className = 'card now';
     if (!loaded) return;
-    if (!staff.length){ box.replaceChildren(el('p','empty','試算表裡還沒有工作人員資料。')); return; }
-    if (!list.length){ box.replaceChildren(el('p','empty',`${sel} 目前沒有排定任務。`)); return; }
+    const msg = !staff.length ? '試算表裡還沒有工作人員資料。' : !list.length ? `${sel} 目前沒有排定任務。` : '';
+    if (msg){ box.className = 'card now'; box.dataset.sig = ''; box.replaceChildren(el('p','empty',msg)); return; }
     const auto = autoIndex(list, n);
     const idx = viewIdx == null ? auto : Math.min(Math.max(viewIdx,0), list.length-1);
     const t = list[idx], st = stateOf(t, n), s = parse(t.start), e = parse(t.end);
-    box.classList.add(st === 'live' ? 'is-live' : st === 'next' ? 'is-next' : 'is-past');
+    // 內容沒變時只更新倒數與進度條，避免每秒重畫打斷勾選
+    const sig = [sel, idx, auto, list.length, viewIdx == null, st, t.start, t.end, t.title, t.place, t.note, checksVer].join('\u0001');
+    if (box.dataset.sig === sig){
+      const big = box.querySelector('.big'); if (big) big.textContent = bigDur(st === 'live' ? e - n : s - n);
+      const bi = box.querySelector('.bar i'); if (bi) bi.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%';
+      return;
+    }
+    box.dataset.sig = sig;
+    box.className = 'card now ' + (st === 'live' ? 'is-live' : st === 'next' ? 'is-next' : 'is-past');
     const frag = document.createDocumentFragment();
     const head = el('div');
     const label = st === 'live' ? '進行中' : st === 'next' ? (idx === auto ? '下一項' : '稍後') : (idx === auto ? '今日任務已完成' : '已結束');
@@ -364,7 +394,7 @@ const CONFIG = {
       frag.append(c);
     }
     if (st === 'live'){ const bar = el('div','bar'); const i = el('i'); i.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%'; bar.append(i); frag.append(bar); }
-    if (t.note) frag.append(el('div','note',t.note));
+    if (t.note) frag.append(renderNote(t));
     const nav = el('div','nav');
     const prev = el('button','btn','‹ 上一項'); prev.disabled = idx === 0; prev.onclick = () => go(idx-1);
     const home = el('button','btn','回到現在'); home.disabled = viewIdx == null || idx === auto; home.onclick = () => { viewIdx = null; renderAll(); };
@@ -374,6 +404,91 @@ const CONFIG = {
     box.dataset.idx = idx;
     if (auto !== lastAuto){ lastAuto = auto; renderTimeline(); }
   }
+
+  /* ---------- 備註：**粗體** 與 [ ] 勾選清單 ---------- */
+  function richText(parent, text){
+    text.split(/(\*\*[^*]+?\*\*)/).forEach(part => {
+      if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('strong', null, part.slice(2,-2)));
+      else if (part) parent.append(document.createTextNode(part));
+    });
+  }
+  function checkState(key, def){
+    const p = pending[key];
+    if (p){
+      const c = checks[key];
+      if (c && c.done === p.done) delete pending[key];
+      else if (Date.now() < p.until) return p;
+      else delete pending[key];
+    }
+    if (apiUrl) return checks[key] || { done: def };
+    const saved = store.get(key);
+    return { done: saved == null ? def : saved === '1' };
+  }
+  async function toggleCheck(key, done){
+    if (!apiUrl){ store.set(key, done ? '1' : '0'); return true; }
+    const d = new Date();
+    pending[key] = { done, by: me, at: `${pad(d.getHours())}:${pad(d.getMinutes())}`, until: Date.now() + 120000 };
+    try {
+      const res = await fetch(apiUrl, { method: 'POST', body: JSON.stringify({ key, done, by: me }) });
+      const out = await res.json();
+      if (!out.ok) throw new Error(out.error || 'fail');
+      return true;
+    } catch(err){
+      delete pending[key]; toast('同步失敗，請檢查網路後再試一次'); return false;
+    }
+  }
+  function renderNote(t){
+    const box = el('div','note');
+    const taskKey = `${t.staff}|${t.start}|${t.title}`;
+    let ul = null, items = [];
+    const seen = {};
+    const head = el('div','chk-head');
+    const updateHead = () => { const d = items.filter(x => x.checked).length; head.textContent = `確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : '（僅存在這支手機）'); };
+    t.note.split(/\r?\n/).forEach(line => {
+      const m = line.match(/^\s*(?:[-*・]\s*)?\[\s*([xXvV✓✔]?)\s*\]\s*(.*)$/);
+      if (m){
+        if (!ul){ ul = el('ul'); box.append(ul); }
+        const text = m[2].trim(); seen[text] = (seen[text] || 0) + 1;
+        const key = apiUrl ? `${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}` : `chk:${SHEET_ID}:${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}`;
+        const st = checkState(key, !!m[1]);
+        const li = el('li'); const lab = el('label'); const cb = el('input');
+        cb.type = 'checkbox'; cb.checked = st.done;
+        const span = el('span','txt'); richText(span, text);
+        const who = el('small'); who.style.cssText = 'display:block;font-size:12px;color:var(--muted);text-decoration:none';
+        const setWho = s => { who.textContent = (s.done && s.by) ? `${s.by} 完成${s.at ? '・' + String(s.at).slice(-5) : ''}` : ''; };
+        setWho(st);
+        li.classList.toggle('done', cb.checked);
+        cb.onchange = async () => {
+          const done = cb.checked;
+          if (apiUrl && !me){ cb.checked = !done; askWho(() => { cb.checked = done; cb.onchange(); }); return; }
+          li.classList.toggle('done', done); updateHead(); setWho(done ? { done, by: me, at: '' } : { done });
+          cb.disabled = true;
+          const ok = await toggleCheck(key, done);
+          cb.disabled = false;
+          if (!ok){ cb.checked = !done; li.classList.toggle('done', !done); updateHead(); setWho(checkState(key, !!m[1])); }
+        };
+        const wrap = el('span'); wrap.append(span, who);
+        lab.append(cb, wrap); li.append(lab); ul.append(li); items.push(cb);
+      } else {
+        ul = null;
+        const p = el('p'); richText(p, line); box.append(p);
+      }
+    });
+    if (items.length){ updateHead(); box.prepend(head); }
+    return box;
+  }
+  function askWho(then){
+    const dlg = $('#whoDlg'); const list = $('#whoList'); list.replaceChildren();
+    staff.forEach(s => {
+      const b = el('button','chip'); b.type = 'button'; b.append(document.createTextNode(s.name), el('small',null,s.role));
+      b.onclick = () => { me = s.name; store.set('me', me); dlg.close(); renderMe(); if (then) then(); };
+      list.append(b);
+    });
+    dlg.querySelector('[data-close]').onclick = () => dlg.close();
+    dlg.showModal();
+  }
+  function renderMe(){ const b = $('#meBtn'); b.hidden = !apiUrl; b.textContent = me ? `我是 ${me}` : '設定我是誰'; }
+
   function go(i){ const list = myTasks(); if (i < 0 || i >= list.length) return; viewIdx = i; renderNow(); renderTimeline(); renderVenue(); }
 
   function renderVenue(){
@@ -425,7 +540,7 @@ const CONFIG = {
     });
     if (!list.length && loaded) ol.append(el('li','empty','沒有任務。'));
   }
-  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); }
+  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); renderMe(); }
 
   // 左右滑動切換任務
   let tx = null;
@@ -437,6 +552,7 @@ const CONFIG = {
 
   $('#editLink').href = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/edit`; $('#editLink').hidden = false;
   $('#refreshBtn').onclick = () => load(true);
+  $('#meBtn').onclick = () => askWho(null);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastSync > 15000) load(false); });
   setInterval(() => { if (!document.hidden) load(false); }, CONFIG.REFRESH_SECONDS * 1000);
   setInterval(() => { renderClock(); renderNow(); renderVenue(); }, 1000);
