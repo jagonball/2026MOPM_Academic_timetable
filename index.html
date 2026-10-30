@@ -79,7 +79,12 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .note strong{font-weight:700}
 .note .chk-head{font-size:13px;color:var(--muted);margin:6px 0 2px}
 .note ul{list-style:none;margin:2px 0;padding:0}
-.note li label{display:flex;align-items:flex-start;gap:10px;padding:6px 0;cursor:pointer}
+.note li{display:flex;align-items:flex-start;gap:10px;padding:6px 0}
+.note li label{display:flex;flex:none;cursor:pointer}
+.note li .item{flex:1;min-width:0;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.note li .txt.struck,.todo .struck{text-decoration:line-through}
+.note li.imp .txt::before{content:"★ ";color:var(--accent)}
+.note .chk-head small{font-size:12px}
 .note li input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
 .note li.done .txt{color:var(--muted)}
 .nav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin-top:18px}
@@ -149,6 +154,20 @@ a.btn{text-decoration:none;display:inline-block}
 .info-body .note{margin-top:0}
 .memo textarea{font:inherit;font-size:16px;line-height:1.6;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-height:9em;resize:vertical}
 .memo .hint{font-size:13px;color:var(--muted);font-weight:400}
+.memo h2 .right{display:flex;gap:10px;align-items:center}
+.memo .note{margin-top:0}
+.memo .help{font-size:13px;color:var(--muted);margin:6px 0 0}
+main{padding-bottom:96px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;border:0;border-radius:999px;padding:12px 18px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.todo{list-style:none;margin:0;padding:0;max-height:60vh;overflow-y:auto}
+.todo li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.todo li:first-child{border-top:0}
+.todo input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
+.todo .body{flex:1;min-width:0}
+.todo .done .t{color:var(--muted)}
+.todo small{display:block;font-size:12px;color:var(--muted)}
+.todo .from{background:none;border:0;padding:0;font-size:12px;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.todo .rm{background:none;border:0;color:var(--muted);font-size:13px;padding:0 2px;flex:none}
 </style>
 </head>
 <body>
@@ -156,7 +175,7 @@ a.btn{text-decoration:none;display:inline-block}
   <div class="top-row">
     <div class="titles">
       <div class="event" id="eventName">會議工作流程</div>
-      <div class="sub"><span id="syncState">尚未讀取</span><button class="linkbtn" id="refreshBtn" type="button">更新</button><button class="linkbtn" id="meBtn" type="button" hidden></button><button class="linkbtn" id="themeBtn" type="button">外觀：自動</button></div>
+      <div class="sub"><span id="verState" hidden></span><span id="syncState">尚未讀取</span><button class="linkbtn" id="refreshBtn" type="button">更新</button><button class="linkbtn" id="meBtn" type="button" hidden></button><button class="linkbtn" id="themeBtn" type="button">外觀：自動</button></div>
     </div>
     <button class="clock num" id="clock" type="button" title="設定模擬時間">--:--:--</button>
     <span class="sim-badge">模擬</span>
@@ -191,8 +210,12 @@ a.btn{text-decoration:none;display:inline-block}
     <div id="info"></div>
   </section>
   <section class="card memo" id="memoCard" hidden>
-    <h2><span id="memoTitle">我的記事本</span><span class="hint" id="memoState"></span></h2>
-    <textarea id="memo" placeholder="隨手記錄。只存在這支手機的瀏覽器裡，其他人看不到。" aria-label="我的記事本"></textarea>
+    <h2><span id="memoTitle">我的記事本</span><span class="right"><span class="hint" id="memoState"></span><button class="btn" id="memoMode" type="button">編輯</button></span></h2>
+    <div id="memoView"></div>
+    <div id="memoEdit" hidden>
+      <textarea id="memo" placeholder="隨手記錄。只存在這支手機的瀏覽器裡，其他人看不到。" aria-label="我的記事本"></textarea>
+      <p class="help">寫法：**粗體**、~~刪除線~~；一行開頭寫 [ ] 變成勾選框。</p>
+    </div>
   </section>
 </main>
 
@@ -232,6 +255,16 @@ a.btn{text-decoration:none;display:inline-block}
       <button type="button" class="btn" data-close>取消</button>
       <button type="submit" class="btn primary">套用</button>
     </div>
+  </form>
+</dialog>
+
+<button class="fab" id="todoFab" type="button" hidden>待完成</button>
+<dialog id="todoDlg">
+  <form class="dlg" method="dialog">
+    <h3>待完成事項</h3>
+    <p style="margin:0;font-size:14px;color:var(--muted)" id="todoSummary"></p>
+    <ul class="todo" id="todoList"></ul>
+    <div class="acts"><button type="button" class="btn" data-close>關閉</button></div>
   </form>
 </dialog>
 
@@ -323,6 +356,8 @@ const CONFIG = {
     L.venueNow = (!L.venueHidden && v) || '會場現在';
     L.venueOther = setting(settings, '其他時段標題') || '這段時間的議程';
     L.word = setting(settings, '議程稱呼') || '議程';
+    const ver = setting(settings, '資料版本'), showVer = /^(是|顯示|開|開啟|yes|on|true)$/i.test(setting(settings, '顯示資料版本'));
+    const vEl = document.getElementById('verState'); vEl.textContent = ver ? `資料版本 ${ver}` : ''; vEl.hidden = !(showVer && ver);
     document.getElementById('infoTitle').textContent = setting(settings, '活動資訊標題') || '活動資訊';
     document.getElementById('memoTitle').textContent = setting(settings, '記事本標題') || '我的記事本';
     // 公開活動可以關閉模擬時間，避免使用者誤觸
@@ -563,7 +598,7 @@ const CONFIG = {
     const idx = viewIdx == null ? auto : Math.min(Math.max(viewIdx,0), list.length-1);
     const t = list[idx], st = stateOf(t, n), s = parse(t.start), e = parse(t.end);
     // 內容沒變時只更新倒數與進度條，避免每秒重畫打斷勾選
-    const sig = [sel, idx, auto, list.length, viewIdx == null, st, t.start, t.end, t.title, t.place, t.note, t.link, checksVer, list.map((x,j) => j !== idx && stateOf(x,n) === 'live' ? j : '').join(',')].join('\u0001');
+    const sig = [sel, idx, auto, list.length, viewIdx == null, st, t.start, t.end, t.title, t.place, t.note, t.link, checksVer, uiVer, list.map((x,j) => j !== idx && stateOf(x,n) === 'live' ? j : '').join(',')].join('\u0001');
     if (box.dataset.sig === sig){
       const big = box.querySelector('.big'); if (big) big.textContent = bigDur(st === 'live' ? e - n : s - n);
       const bi = box.querySelector('.bar i'); if (bi) bi.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%';
@@ -599,7 +634,7 @@ const CONFIG = {
     const home = el('button','btn','回到現在'); home.disabled = viewIdx == null || idx === auto; home.onclick = () => { viewIdx = null; renderAll(); };
     const next = el('button','btn','下一項 ›'); next.disabled = idx === list.length-1; next.onclick = () => go(idx+1);
     nav.append(prev, home, next); frag.append(nav);
-    if (t.note) frag.append(renderNote(t.note, `${t.staff}|${t.start}|${t.title}`));
+    if (t.note) frag.append(renderNote(t.note, `${t.staff}|${t.start}|${t.title}`, t.title, { staff: t.staff, start: t.start, title: t.title }));
     box.replaceChildren(frag);
     box.dataset.idx = idx;
     if (auto !== lastAuto){ lastAuto = auto; renderTimeline(); }
@@ -608,10 +643,11 @@ const CONFIG = {
   /* ---------- 備註：**粗體** 與 [ ] 勾選清單 ---------- */
   // 支援 **粗體**、[文字](網址) 與直接貼上的網址
   function richText(parent, text){
-    text.split(/(\*\*[^*]+?\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>（）「」，。、]+)/).forEach(part => {
+    text.split(/(~~[^~]+?~~|\*\*[^*]+?\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>（）「」，。、]+)/).forEach(part => {
       if (!part) return;
       let m;
-      if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('strong', null, part.slice(2,-2)));
+      if (/^~~[^~]+~~$/.test(part)){ const s = el('s'); richText(s, part.slice(2,-2)); parent.append(s); }
+      else if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('strong', null, part.slice(2,-2)));
       else if ((m = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/))) parent.append(makeLink(m[2], m[1]));
       else if (/^https?:\/\//.test(part)) parent.append(makeLink(part, shortLabel(part)));
       else parent.append(document.createTextNode(part));
@@ -668,26 +704,61 @@ const CONFIG = {
       delete pending[key]; toast('同步失敗，請檢查網路後再試一次'); return false;
     }
   }
-  function renderNote(text, taskKey){
+  const ITEM_RE = /^(\s*(?:[-*・]\s*)?)\[\s*([xXvV✓✔]?)\s*\]\s*(.*)$/;
+  const plainOf = t => t.replace(/~~([^~]+?)~~/g,'$1').replace(/\*\*([^*]+?)\*\*/g,'$1').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1').trim();
+
+  // 點一下：onTap；長按（或電腦按右鍵）：onLong
+  function pressable(node, onTap, onLong){
+    let timer = null, fired = false, sx = 0, sy = 0;
+    const cancel = () => { if (timer){ clearTimeout(timer); timer = null; } };
+    node.addEventListener('pointerdown', e => {
+      fired = false; sx = e.clientX; sy = e.clientY;
+      timer = setTimeout(() => { timer = null; fired = true; onLong(); try { navigator.vibrate && navigator.vibrate(30); } catch(_){} }, 550);
+    });
+    node.addEventListener('pointermove', e => { if (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8) cancel(); });
+    ['pointerup','pointercancel','pointerleave'].forEach(t => node.addEventListener(t, cancel));
+    node.addEventListener('contextmenu', e => { e.preventDefault(); if (!fired){ cancel(); fired = true; onLong(); } });
+    node.addEventListener('click', e => { if (fired){ fired = false; e.preventDefault(); return; } if (e.target.closest('a')) return; onTap(); });
+    node.tabIndex = 0; node.setAttribute('role','button');
+    node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onTap(); } });
+  }
+
+  /* ---------- 待完成事項（長按項目加入，存在這支手機） ---------- */
+  let uiVer = 0;
+  const impKey = () => `imp:${SRC}:${me || ''}`;
+  function getImp(){ try { return JSON.parse(store.get(impKey()) || '[]'); } catch(e){ return []; } }
+  function setImp(a){ store.set(impKey(), JSON.stringify(a)); }
+  const isImp = key => getImp().some(x => x.key === key);
+  function toggleImp(entry){
+    const a = getImp(); const i = a.findIndex(x => x.key === entry.key);
+    if (i >= 0){ a.splice(i,1); toast('已從待完成事項移除'); } else { a.push(entry); toast('已加入待完成事項 ★'); }
+    setImp(a); bump();
+  }
+  function bump(){ uiVer++; renderNow(); infoSig = ''; renderInfo(); renderMemoView(); renderTodo(); }
+
+  function renderNote(text, taskKey, from, meta){
     const box = el('div','note');
     let ul = null, items = [];
     const seen = {};
     const head = el('div','chk-head');
-    const updateHead = () => { const d = items.filter(x => x.checked).length; head.textContent = `確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : ''); };
+    const updateHead = () => { const d = items.filter(x => x.checked).length; head.replaceChildren(document.createTextNode(`確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : '')), el('small', null, '・點文字加刪除線，長按加入待完成')); };
     text.split(/\r?\n/).forEach(line => {
-      const m = line.match(/^\s*(?:[-*・]\s*)?\[\s*([xXvV✓✔]?)\s*\]\s*(.*)$/);
+      const m = line.match(ITEM_RE);
       if (m){
         if (!ul){ ul = el('ul'); box.append(ul); }
-        const text = m[2].trim(); seen[text] = (seen[text] || 0) + 1;
+        const text = m[3].trim(); seen[text] = (seen[text] || 0) + 1;
         const key = apiUrl ? `${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}` : `chk:${SRC}:${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}`;
-        const st = checkState(key, !!m[1]);
+        const def = !!m[2];
+        const st = checkState(key, def);
         const li = el('li'); const lab = el('label'); const cb = el('input');
-        cb.type = 'checkbox'; cb.checked = st.done;
+        cb.type = 'checkbox'; cb.checked = st.done; cb.setAttribute('aria-label', plainOf(text));
         const span = el('span','txt'); richText(span, text);
+        span.classList.toggle('struck', store.get('strike:' + key) === '1');
         const who = el('small'); who.style.cssText = 'display:block;font-size:12px;color:var(--muted);text-decoration:none';
         const setWho = s => { who.textContent = (s.done && s.by) ? `${s.by} 完成${s.at ? '・' + String(s.at).slice(-5) : ''}` : ''; };
         setWho(st);
         li.classList.toggle('done', cb.checked);
+        li.classList.toggle('imp', isImp(key));
         cb.onchange = async () => {
           const done = cb.checked;
           if (apiUrl && !me){ cb.checked = !done; askWho(() => { cb.checked = done; cb.onchange(); }); return; }
@@ -695,10 +766,14 @@ const CONFIG = {
           cb.disabled = true;
           const ok = await toggleCheck(key, done);
           cb.disabled = false;
-          if (!ok){ cb.checked = !done; li.classList.toggle('done', !done); updateHead(); setWho(checkState(key, !!m[1])); }
+          if (!ok){ cb.checked = !done; li.classList.toggle('done', !done); updateHead(); setWho(checkState(key, def)); }
+          renderTodo();
         };
-        const wrap = el('span'); wrap.append(span, who);
-        lab.append(cb, wrap); li.append(lab); ul.append(li); items.push(cb);
+        const item = el('span','item'); item.append(span, who);
+        pressable(item,
+          () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); renderTodo(); },
+          () => toggleImp({ key, kind: 'task', text: plainOf(text), from: from || '', def, meta: meta || null }));
+        lab.append(cb); li.append(lab, item); ul.append(li); items.push(cb);
       } else {
         ul = null;
         const p = el('p'); richText(p, line); box.append(p);
@@ -712,7 +787,7 @@ const CONFIG = {
     $('#whoTitle').textContent = whoLabel ? `你的${whoLabel}是？` : '你是哪一位？';
     staff.forEach(s => {
       const b = el('button','chip'); b.type = 'button'; b.append(document.createTextNode(s.name), el('small',null,s.role));
-      b.onclick = () => { me = s.name; store.set('me:' + SRC, me); dlg.close(); renderMe(); renderMemo(); if (then) then(); };
+      b.onclick = () => { me = s.name; store.set('me:' + SRC, me); dlg.close(); renderMe(); renderMemo(); renderTodo(); if (then) then(); };
       list.append(b);
     });
     dlg.querySelector('[data-close]').onclick = () => dlg.close();
@@ -727,8 +802,8 @@ const CONFIG = {
     askedWho = true; askWho(showMine);
   }
 
-  /* ---------- 個人記事本（只存在這支手機） ---------- */
-  let memoTimer = null;
+  /* ---------- 個人記事本（只存在這支手機，支援粗體、勾選框、刪除線） ---------- */
+  let memoTimer = null, memoMode = 'view';
   const memoKey = () => `memo:${SRC}:${me}`;
   function renderMemo(){
     const card = $('#memoCard');
@@ -737,17 +812,112 @@ const CONFIG = {
     card.dataset.owner = me;
     $('#memo').value = store.get(memoKey()) || '';
     $('#memoState').textContent = '';
+    setMemoMode($('#memo').value.trim() ? 'view' : 'edit');
   }
+  function saveMemo(){
+    try {
+      localStorage.setItem(memoKey(), $('#memo').value);
+      const d = new Date(); $('#memoState').textContent = `已儲存 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch(e){ $('#memoState').textContent = '無法儲存（可能是無痕模式）'; }
+  }
+  function setMemoMode(mode){
+    memoMode = mode;
+    $('#memoEdit').hidden = mode !== 'edit'; $('#memoView').hidden = mode === 'edit';
+    $('#memoMode').textContent = mode === 'edit' ? '完成' : '編輯';
+    if (mode === 'view') renderMemoView();
+  }
+  $('#memoMode').onclick = () => {
+    if (memoMode === 'edit'){ clearTimeout(memoTimer); saveMemo(); setMemoMode('view'); renderTodo(); }
+    else { setMemoMode('edit'); $('#memo').focus(); }
+  };
   $('#memo').addEventListener('input', () => {
     $('#memoState').textContent = '輸入中…';
-    clearTimeout(memoTimer);
-    memoTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(memoKey(), $('#memo').value);
-        const d = new Date(); $('#memoState').textContent = `已儲存 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      } catch(e){ $('#memoState').textContent = '這個瀏覽器無法儲存（可能是無痕模式）'; }
-    }, 500);
+    clearTimeout(memoTimer); memoTimer = setTimeout(saveMemo, 500);
   });
+  function memoLines(){ return $('#memo').value.split(/\r?\n/); }
+  function writeMemoLines(lines){ $('#memo').value = lines.join('\n'); saveMemo(); }
+  function findMemoItem(plain){ return memoLines().findIndex(l => { const m = l.match(ITEM_RE); return m && plainOf(m[3]) === plain; }); }
+  function setMemoCheck(i, done){ const lines = memoLines(); const m = lines[i] && lines[i].match(ITEM_RE); if (!m) return; lines[i] = `${m[1]}[${done ? 'x' : ' '}] ${m[3]}`; writeMemoLines(lines); }
+  function renderMemoView(){
+    const view = $('#memoView'); if (!view || memoMode !== 'view' || !me) return;
+    const text = $('#memo').value;
+    if (!text.trim()){ view.replaceChildren(el('p','empty','還沒有內容，按「編輯」開始記錄。')); return; }
+    const box = el('div','note'); let ul = null;
+    memoLines().forEach((line, i) => {
+      const m = line.match(ITEM_RE);
+      if (m){
+        if (!ul){ ul = el('ul'); box.append(ul); }
+        const plain = plainOf(m[3]); const key = 'memo|' + plain;
+        const li = el('li'); const lab = el('label'); const cb = el('input');
+        cb.type = 'checkbox'; cb.checked = !!m[2]; cb.setAttribute('aria-label', plain);
+        li.classList.toggle('done', cb.checked); li.classList.toggle('imp', isImp(key));
+        cb.onchange = () => { setMemoCheck(i, cb.checked); li.classList.toggle('done', cb.checked); renderTodo(); };
+        const span = el('span','txt'); richText(span, m[3]);
+        const item = el('span','item'); item.append(span);
+        pressable(item,
+          () => { const lines = memoLines(); const mm = lines[i].match(ITEM_RE); if (!mm) return;
+                  const t = mm[3].trim(); const nt = /^~~.*~~$/.test(t) ? t.slice(2,-2) : `~~${t}~~`;
+                  lines[i] = `${mm[1]}[${mm[2] ? 'x' : ' '}] ${nt}`; writeMemoLines(lines); renderMemoView(); renderTodo(); },
+          () => toggleImp({ key, kind: 'memo', text: plain, from: $('#memoTitle').textContent }));
+        lab.append(cb); li.append(lab, item); ul.append(li);
+      } else {
+        ul = null; const p = el('p'); richText(p, line); box.append(p);
+      }
+    });
+    view.replaceChildren(box);
+  }
+
+  function renderTodo(){
+    const fab = $('#todoFab'); const list = getImp();
+    if (!SRC || EXPORT || !list.length){ fab.hidden = true; if ($('#todoDlg').open) fillTodo(list); return; }
+    const states = list.map(todoState);
+    const left = states.filter(s => !s.done && !s.missing).length;
+    fab.hidden = false; fab.textContent = left ? `★ 待完成 ${left}` : '★ 待完成 ✓';
+    if ($('#todoDlg').open) fillTodo(list);
+  }
+  function todoState(e){
+    if (e.kind === 'memo'){
+      const i = findMemoItem(e.text); if (i < 0) return { missing: true };
+      const m = memoLines()[i].match(ITEM_RE); return { done: !!m[2], struck: /^~~.*~~$/.test(m[3].trim()), memoIndex: i };
+    }
+    return { done: checkState(e.key, e.def).done, struck: store.get('strike:' + e.key) === '1' };
+  }
+  function fillTodo(list){
+    const ul = $('#todoList'); ul.replaceChildren();
+    const rows = list.map(e => ({ e, s: todoState(e) })).sort((a,b) => (a.s.done ? 1 : 0) - (b.s.done ? 1 : 0));
+    const left = rows.filter(r => !r.s.done && !r.s.missing).length;
+    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在清單項目上長按，就能加進來。';
+    rows.forEach(({ e, s }) => {
+      const li = el('li', s.done ? 'done' : '');
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!s.done; cb.disabled = !!s.missing; cb.setAttribute('aria-label', e.text);
+      cb.onchange = async () => {
+        if (e.kind === 'memo'){ const i = findMemoItem(e.text); if (i >= 0) setMemoCheck(i, cb.checked); }
+        else {
+          if (apiUrl && !me){ cb.checked = !cb.checked; return; }
+          cb.disabled = true; await toggleCheck(e.key, cb.checked); cb.disabled = false;
+        }
+        bump();
+      };
+      const body = el('div','body');
+      const t = el('div','t' + (s.struck ? ' struck' : ''), e.text + (s.missing ? '（已從筆記刪除）' : ''));
+      body.append(t);
+      if (e.meta){
+        const b = el('button','from', e.from); b.type = 'button';
+        b.onclick = () => {
+          if (!staff.some(x => x.name === e.meta.staff)) return;
+          sel = e.meta.staff; store.set('sel:' + SRC, sel);
+          const i = myTasks().findIndex(x => x.start === e.meta.start && x.title === e.meta.title);
+          viewIdx = i >= 0 ? i : null; lastAuto = -2; $('#todoDlg').close(); renderAll(); window.scrollTo({ top: 0 });
+        };
+        const sm = el('small'); sm.append(b); body.append(sm);
+      } else if (e.from) body.append(el('small', null, e.from));
+      const rm = el('button','rm','移除'); rm.type = 'button';
+      rm.onclick = () => { setImp(getImp().filter(x => x.key !== e.key)); bump(); };
+      li.append(cb, body, rm); ul.append(li);
+    });
+  }
+  $('#todoFab').onclick = () => { fillTodo(getImp()); $('#todoDlg').showModal(); };
+  $('#todoDlg').querySelector('[data-close]').onclick = () => $('#todoDlg').close();
 
   function go(i){ const list = myTasks(); if (i < 0 || i >= list.length) return; viewIdx = i; renderNow(); renderTimeline(); renderVenue(); }
 
@@ -815,12 +985,12 @@ const CONFIG = {
       const sum = el('summary', null, it.title);
       const meta = [it.time, it.place].filter(Boolean).join('・'); if (meta) sum.append(el('small', null, meta));
       const body = el('div','info-body');
-      if (it.body) body.append(renderNote(it.body, `info|${it.cat}|${it.title}`));
+      if (it.body) body.append(renderNote(it.body, `info|${it.cat}|${it.title}`, it.title, null));
       if (it.link) body.append(linkButtons(it.link));
       d.append(sum, body); box.append(d);
     });
   }
-  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); renderInfo(); renderMe(); renderMemo(); }
+  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); renderInfo(); renderMe(); renderMemo(); renderTodo(); }
 
   // 左右滑動切換任務
   let tx = null;
