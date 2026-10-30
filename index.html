@@ -736,20 +736,33 @@ const CONFIG = {
   const plainOf = t => t.replace(/`([^`]+)`/g,'$1').replace(/~~([^~]+?)~~/g,'$1').replace(/\*\*((?:[^*]|\*(?!\*))+?)\*\*/g,'$1').replace(/\*([^*\s](?:[^*]*?[^*\s])?)\*/g,'$1').replace(/__([^_]+?)__/g,'$1').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1').trim();
 
   // 點一下：onTap；長按（或電腦按右鍵）：onLong
+  // 長按後畫面會重畫，手機接著送出的 contextmenu／click 可能落在新畫出的項目上，
+  // 所以用全域的冷卻時間，避免同一次長按觸發兩次（加入又移除）或誤加刪除線
+  let lastLong = 0;
+  const LONG_GUARD = 900;
   function pressable(node, onTap, onLong){
-    let timer = null, fired = false, sx = 0, sy = 0;
+    let timer = null, sx = 0, sy = 0;
     const cancel = () => { if (timer){ clearTimeout(timer); timer = null; } };
+    const fireLong = () => {
+      if (Date.now() - lastLong < LONG_GUARD) return;
+      lastLong = Date.now(); onLong();
+      try { navigator.vibrate && navigator.vibrate(30); } catch(_){}
+    };
     node.addEventListener('pointerdown', e => {
-      fired = false; sx = e.clientX; sy = e.clientY;
-      timer = setTimeout(() => { timer = null; fired = true; onLong(); try { navigator.vibrate && navigator.vibrate(30); } catch(_){} }, 550);
+      sx = e.clientX; sy = e.clientY; cancel();
+      timer = setTimeout(() => { timer = null; fireLong(); }, 550);
     });
     node.addEventListener('pointermove', e => { if (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8) cancel(); });
     ['pointerup','pointercancel','pointerleave'].forEach(t => node.addEventListener(t, cancel));
-    node.addEventListener('contextmenu', e => { e.preventDefault(); if (!fired){ cancel(); fired = true; onLong(); } });
-    node.addEventListener('click', e => { if (fired){ fired = false; e.preventDefault(); return; } if (e.target.closest('a')) return; onTap(); });
+    node.addEventListener('contextmenu', e => { e.preventDefault(); cancel(); fireLong(); });
+    node.addEventListener('click', e => {
+      if (Date.now() - lastLong < LONG_GUARD){ e.preventDefault(); return; }
+      if (e.target.closest('a')) return; onTap();
+    });
     node.tabIndex = 0; node.setAttribute('role','button');
     node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onTap(); } });
   }
+
 
   /* ---------- 待完成事項（長按項目加入，存在這支手機） ---------- */
   let uiVer = 0;
@@ -1071,7 +1084,7 @@ const CONFIG = {
     const ordered = saved.map(k => list.find(e => e.key === k)).filter(Boolean).concat(list.filter(e => !saved.includes(e.key)));
     const rows = ordered.map(e => ({ e, s: todoState(e) }));
     const left = rows.filter(r => !r.s.done && !r.s.missing).length;
-    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在勾選項目或 •條列項目上長按，就能加進來。';
+    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在清單或「-」條列項目上長按，就能加進來。';
     setTimeout(() => makeSortable(ul, saveTodoOrder, 'li'));
     rows.forEach(({ e, s }) => {
       const li = el('li', s.done ? 'done' : ''); li.dataset.key = e.key;
