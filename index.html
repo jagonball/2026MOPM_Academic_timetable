@@ -235,7 +235,7 @@ main{padding-bottom:96px}
     <div id="memoView"></div>
     <div id="memoEdit" hidden>
       <textarea id="memo" placeholder="隨手記錄。只存在這支手機的瀏覽器裡，其他人看不到。" aria-label="我的記事本"></textarea>
-      <p class="help">寫法：**粗體**、~~刪除線~~；一行開頭寫 [ ] 變成勾選框。</p>
+      <p class="help">寫法：**粗體**、*斜體*、__底線__、~~刪除線~~；一行開頭寫 [ ] 變成勾選框，寫 - 加空格變成條列。</p>
     </div>
   </section>
 </main>
@@ -665,12 +665,14 @@ const CONFIG = {
   /* ---------- 備註：**粗體** 與 [ ] 勾選清單 ---------- */
   // 支援 **粗體**、[文字](網址) 與直接貼上的網址
   function richText(parent, text){
-    text.split(/(`[^`]+`|~~[^~]+?~~|\*\*[^*]+?\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>（）「」，。、]+)/).forEach(part => {
+    text.split(/(`[^`]+`|~~[^~]+?~~|\*\*(?:[^*]|\*(?!\*))+?\*\*|\*[^*\s](?:[^*]*?[^*\s])?\*|__[^_]+?__|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>（）「」，。、]+)/).forEach(part => {
       if (!part) return;
       let m;
       if (/^`[^`]+`$/.test(part)) parent.append(el('code', null, part.slice(1,-1)));   // `原樣顯示`
       else if (/^~~[^~]+~~$/.test(part)){ const s = el('s'); richText(s, part.slice(2,-2)); parent.append(s); }
-      else if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('strong', null, part.slice(2,-2)));
+      else if (/^\*\*(?:[^*]|\*(?!\*))+\*\*$/.test(part)){ const b = el('strong'); richText(b, part.slice(2,-2)); parent.append(b); }
+      else if (/^\*[^*\s](?:[^*]*?[^*\s])?\*$/.test(part)){ const i = el('em'); richText(i, part.slice(1,-1)); parent.append(i); }   // *斜體*
+      else if (/^__[^_]+__$/.test(part)){ const u = el('u'); richText(u, part.slice(2,-2)); parent.append(u); }                    // __底線__
       else if ((m = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/))) parent.append(makeLink(m[2], m[1]));
       else if (/^https?:\/\//.test(part)) parent.append(makeLink(part, shortLabel(part)));
       else parent.append(document.createTextNode(part));
@@ -731,7 +733,7 @@ const CONFIG = {
   const MUST_RE = /^\s*\[!\]\s*(.+)$/;     // [!] 必看重點
   const BUL_RE = /^\s*-\s+(.+)$/;           // - 條列項目
   const mustKey = (taskKey, t, n) => `must:${SRC}:${taskKey}|${t}${n > 1 ? '#' + n : ''}`;
-  const plainOf = t => t.replace(/`([^`]+)`/g,'$1').replace(/~~([^~]+?)~~/g,'$1').replace(/\*\*([^*]+?)\*\*/g,'$1').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1').trim();
+  const plainOf = t => t.replace(/`([^`]+)`/g,'$1').replace(/~~([^~]+?)~~/g,'$1').replace(/\*\*((?:[^*]|\*(?!\*))+?)\*\*/g,'$1').replace(/\*([^*\s](?:[^*]*?[^*\s])?)\*/g,'$1').replace(/__([^_]+?)__/g,'$1').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1').trim();
 
   // 點一下：onTap；長按（或電腦按右鍵）：onLong
   function pressable(node, onTap, onLong){
