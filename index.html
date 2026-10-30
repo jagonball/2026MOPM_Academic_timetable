@@ -83,10 +83,21 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .note ul{list-style:none;margin:2px 0;padding:0}
 .note li{display:flex;align-items:flex-start;gap:10px;padding:6px 0}
 .note li label{display:flex;flex:none;cursor:pointer}
-.note li .item{flex:1;min-width:0;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
-.note li .txt.struck,.todo .struck{text-decoration:line-through}
+.note .item{flex:1;min-width:0;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.note .txt.struck,.todo .struck{text-decoration:line-through}
 .note li.imp .txt::before{content:"★ ";color:var(--accent)}
 .note .chk-head small{font-size:12px}
+.note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0 4px;white-space:nowrap}
+.note .must{display:flex;align-items:flex-start;gap:8px;margin:8px 0;padding:8px 10px;border:1.5px solid var(--accent);border-radius:8px;background:var(--surface)}
+.note .must label{display:flex;flex:none;cursor:pointer}
+.note .must input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
+.note .must .star{flex:none;color:var(--accent);font-weight:700}
+.note .must .txt{font-weight:700}
+.note .must.done .txt{color:var(--muted)}
+.note .must.off{border-style:dashed}
+.note ul.bul li{gap:8px;padding:3px 0}
+.note ul.bul .dot{flex:none;color:var(--muted)}
+.todo .tag{display:inline-block;font-size:11px;font-weight:700;color:var(--accent-ink);background:var(--accent);border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px}
 .blk{border-top:1px solid var(--line);margin-top:8px;padding-top:6px}
 .blk-head{display:flex;align-items:center;gap:6px}
 .blk-title{flex:1;min-width:0;font-weight:700;font-size:15px}
@@ -652,10 +663,11 @@ const CONFIG = {
   /* ---------- 備註：**粗體** 與 [ ] 勾選清單 ---------- */
   // 支援 **粗體**、[文字](網址) 與直接貼上的網址
   function richText(parent, text){
-    text.split(/(~~[^~]+?~~|\*\*[^*]+?\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>（）「」，。、]+)/).forEach(part => {
+    text.split(/(`[^`]+`|~~[^~]+?~~|\*\*[^*]+?\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>（）「」，。、]+)/).forEach(part => {
       if (!part) return;
       let m;
-      if (/^~~[^~]+~~$/.test(part)){ const s = el('s'); richText(s, part.slice(2,-2)); parent.append(s); }
+      if (/^`[^`]+`$/.test(part)) parent.append(el('code', null, part.slice(1,-1)));   // `原樣顯示`
+      else if (/^~~[^~]+~~$/.test(part)){ const s = el('s'); richText(s, part.slice(2,-2)); parent.append(s); }
       else if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('strong', null, part.slice(2,-2)));
       else if ((m = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/))) parent.append(makeLink(m[2], m[1]));
       else if (/^https?:\/\//.test(part)) parent.append(makeLink(part, shortLabel(part)));
@@ -714,7 +726,10 @@ const CONFIG = {
     }
   }
   const ITEM_RE = /^(\s*(?:[-*・]\s*)?)\[\s*([xXvV✓✔]?)\s*\]\s*(.*)$/;
-  const plainOf = t => t.replace(/~~([^~]+?)~~/g,'$1').replace(/\*\*([^*]+?)\*\*/g,'$1').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1').trim();
+  const MUST_RE = /^\s*\[!\]\s*(.+)$/;     // [!] 必看重點
+  const BUL_RE = /^\s*-\s+(.+)$/;           // - 條列項目
+  const mustKey = (taskKey, t, n) => `must:${SRC}:${taskKey}|${t}${n > 1 ? '#' + n : ''}`;
+  const plainOf = t => t.replace(/`([^`]+)`/g,'$1').replace(/~~([^~]+?)~~/g,'$1').replace(/\*\*([^*]+?)\*\*/g,'$1').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1').trim();
 
   // 點一下：onTap；長按（或電腦按右鍵）：onLong
   function pressable(node, onTap, onLong){
@@ -738,6 +753,31 @@ const CONFIG = {
   function getImp(){ try { return JSON.parse(store.get(impKey()) || '[]'); } catch(e){ return []; } }
   function setImp(a){ store.set(impKey(), JSON.stringify(a)); }
   const isImp = key => getImp().some(x => x.key === key);
+  // 被使用者從清單移除的 [!] 必看重點
+  const disKey = () => `impdis:${SRC}:${me || ''}`;
+  function getDis(){ try { return JSON.parse(store.get(disKey()) || '[]'); } catch(e){ return []; } }
+  function toggleDis(key){
+    const a = getDis(); const i = a.indexOf(key);
+    if (i >= 0){ a.splice(i,1); toast('已加回待完成事項 ★'); } else { a.push(key); toast('已從待完成事項移除'); }
+    store.set(disKey(), a.length ? JSON.stringify(a) : null); bump();
+  }
+  // 從自己的流程與活動資訊中找出所有 [!] 必看重點
+  function mustEntries(){
+    const who = me || sel, out = [];
+    const scan = (note, taskKey, from, meta) => {
+      const seen = {};
+      note.split(/\r?\n/).forEach(line => {
+        const m = line.match(MUST_RE); if (!m) return;
+        const t = m[1].trim(); seen[t] = (seen[t] || 0) + 1;
+        out.push({ key: mustKey(taskKey, t, seen[t]), kind: 'must', text: plainOf(t), from, meta });
+      });
+    };
+    tasks.filter(t => t.staff === who && t.note).sort((a,b) => a.start < b.start ? -1 : 1)
+      .forEach(t => scan(t.note, `${t.staff}|${t.start}|${t.title}`, t.title, { staff: t.staff, start: t.start, title: t.title }));
+    infos.forEach(it => { if (it.body) scan(it.body, `info|${it.cat}|${it.title}`, it.title, { info: `${it.cat}|${it.title}` }); });
+    return out;
+  }
+  function allTodo(){ const dis = getDis(); return mustEntries().filter(e => !dis.includes(e.key)).concat(getImp()); }
   function toggleImp(entry){
     const a = getImp(); const i = a.findIndex(x => x.key === entry.key);
     if (i >= 0){ a.splice(i,1); toast('已從待完成事項移除'); } else { a.push(entry); toast('已加入待完成事項 ★'); }
@@ -751,12 +791,44 @@ const CONFIG = {
     const seen = {};
     const head = el('div','chk-head');
     const updateHead = () => { const d = items.filter(x => x.checked).length; head.replaceChildren(document.createTextNode(`確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : '')), el('small', null, '・點文字加刪除線，長按加入待完成')); };
+    const mseen = {}, bseen = {};
+    const strikeToggle = (span, key) => () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); renderTodo(); };
+    // [!] 必看重點：醒目顯示，自動列入待完成事項
+    const mustRow = raw => {
+      mseen[raw] = (mseen[raw] || 0) + 1; const key = mustKey(taskKey, raw, mseen[raw]);
+      const row = el('div','must'); const lab = el('label'); const cb = el('input');
+      cb.type = 'checkbox'; cb.checked = store.get('tododone:' + key) === '1'; cb.setAttribute('aria-label', '必看：' + plainOf(raw));
+      row.classList.toggle('done', cb.checked); row.classList.toggle('off', getDis().includes(key));
+      cb.onchange = () => { store.set('tododone:' + key, cb.checked ? '1' : null); row.classList.toggle('done', cb.checked); renderTodo(); };
+      const span = el('span','txt'); richText(span, raw); span.classList.toggle('struck', store.get('strike:' + key) === '1');
+      const item = el('span','item'); item.append(span);
+      pressable(item, strikeToggle(span, key), () => toggleDis(key));
+      lab.append(cb); row.append(lab, el('span','star','★'), item);
+      return row;
+    };
     // 把一段文字（多行）畫進 container
     const renderLines = (lines, container) => {
-      let ul = null;
+      let ul = null, bl = null;
       lines.forEach(line => {
+        const mu = line.match(MUST_RE);
+        if (mu){ ul = null; bl = null; container.append(mustRow(mu[1].trim())); return; }
         const m = line.match(ITEM_RE);
+        const bm = !m && line.match(BUL_RE);
+        if (bm){
+          ul = null;
+          if (!bl){ bl = el('ul','bul'); container.append(bl); }
+          const t = bm[1].trim(); bseen[t] = (bseen[t] || 0) + 1;
+          const key = `bul:${SRC}:${taskKey}|${t}${bseen[t] > 1 ? '#' + bseen[t] : ''}`;
+          const li = el('li'); const on = isImp(key);
+          li.classList.toggle('imp', on); li.classList.toggle('done', on && store.get('tododone:' + key) === '1');
+          const span = el('span','txt'); richText(span, t); span.classList.toggle('struck', store.get('strike:' + key) === '1');
+          const item = el('span','item'); item.append(span);
+          pressable(item, strikeToggle(span, key), () => toggleImp({ key, kind: 'bullet', text: plainOf(t), from: from || '', meta: meta || null }));
+          li.append(el('span','dot','•'), item); bl.append(li);
+          return;
+        }
         if (m){
+          bl = null;
           if (!ul){ ul = el('ul'); container.append(ul); }
           const text = m[3].trim(); seen[text] = (seen[text] || 0) + 1;
           const key = apiUrl ? `${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}` : `chk:${SRC}:${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}`;
@@ -787,7 +859,7 @@ const CONFIG = {
             () => toggleImp({ key, kind: 'task', text: plainOf(text), from: from || '', def, meta: meta || null }));
           lab.append(cb); li.append(lab, item); ul.append(li); items.push(cb);
         } else {
-          ul = null;
+          ul = null; bl = null;
           const p = el('p'); richText(p, line); container.append(p);
         }
       });
@@ -929,7 +1001,7 @@ const CONFIG = {
     const view = $('#memoView'); if (!view || memoMode !== 'view' || !me) return;
     const text = $('#memo').value;
     if (!text.trim()){ view.replaceChildren(el('p','empty','還沒有內容，按「編輯」開始記錄。')); return; }
-    const box = el('div','note'); let ul = null;
+    const box = el('div','note'); let ul = null, bl = null;
     memoLines().forEach((line, i) => {
       const m = line.match(ITEM_RE);
       if (m){
@@ -947,50 +1019,79 @@ const CONFIG = {
                   lines[i] = `${mm[1]}[${mm[2] ? 'x' : ' '}] ${nt}`; writeMemoLines(lines); renderMemoView(); renderTodo(); },
           () => toggleImp({ key, kind: 'memo', text: plain, from: $('#memoTitle').textContent }));
         lab.append(cb); li.append(lab, item); ul.append(li);
+      } else if (line.match(BUL_RE)){
+        const bm = line.match(/^(\s*-\s+)(.+)$/);
+        if (!bl){ bl = el('ul','bul'); box.append(bl); }
+        const plain = plainOf(bm[2]); const key = 'memobul|' + plain; const on = isImp(key);
+        const li = el('li'); li.classList.toggle('imp', on); li.classList.toggle('done', on && store.get('tododone:' + key) === '1');
+        const span = el('span','txt'); richText(span, bm[2]);
+        const item = el('span','item'); item.append(span);
+        pressable(item,
+          () => { const lines = memoLines(); const mm = lines[i].match(/^(\s*-\s+)(.+)$/); if (!mm) return;
+                  const t = mm[2].trim(); lines[i] = mm[1] + (/^~~.*~~$/.test(t) ? t.slice(2,-2) : `~~${t}~~`); writeMemoLines(lines); renderMemoView(); renderTodo(); },
+          () => toggleImp({ key, kind: 'memobul', text: plain, from: $('#memoTitle').textContent }));
+        li.append(el('span','dot','•'), item); bl.append(li); ul = null;
+        return;
       } else {
         ul = null; const p = el('p'); richText(p, line); box.append(p);
       }
+      bl = null;
     });
     view.replaceChildren(box);
   }
 
   function renderTodo(){
-    const fab = $('#todoFab'); const list = getImp();
-    if (!SRC || EXPORT || !list.length){ fab.hidden = true; if ($('#todoDlg').open) fillTodo(list); return; }
-    const states = list.map(todoState);
-    const left = states.filter(s => !s.done && !s.missing).length;
+    const fab = $('#todoFab'); const list = allTodo();
+    if (!SRC || EXPORT || !list.length){ fab.hidden = true; if ($('#todoDlg').open) fillTodo(); return; }
+    const left = list.map(todoState).filter(s => !s.done && !s.missing).length;
     fab.hidden = false; fab.textContent = left ? `★ 待完成 ${left}` : '★ 待完成 ✓';
-    if ($('#todoDlg').open) fillTodo(list);
+    if ($('#todoDlg').open) fillTodo();
   }
   function todoState(e){
+    const done = () => store.get('tododone:' + e.key) === '1';
     if (e.kind === 'memo'){
       const i = findMemoItem(e.text); if (i < 0) return { missing: true };
-      const m = memoLines()[i].match(ITEM_RE); return { done: !!m[2], struck: /^~~.*~~$/.test(m[3].trim()), memoIndex: i };
+      const m = memoLines()[i].match(ITEM_RE); return { done: !!m[2], struck: /^~~.*~~$/.test(m[3].trim()) };
     }
+    if (e.kind === 'memobul'){
+      const line = memoLines().find(l => { const m = !l.match(ITEM_RE) && l.match(BUL_RE); return m && plainOf(m[1]) === e.text; });
+      if (!line) return { missing: true };
+      return { done: done(), struck: /^~~.*~~$/.test(line.match(BUL_RE)[1].trim()) };
+    }
+    if (e.kind === 'must' || e.kind === 'bullet') return { done: done(), struck: store.get('strike:' + e.key) === '1' };
     return { done: checkState(e.key, e.def).done, struck: store.get('strike:' + e.key) === '1' };
   }
-  function fillTodo(list){
+  function fillTodo(){
     const ul = $('#todoList'); ul.replaceChildren();
-    const rows = list.map(e => ({ e, s: todoState(e) })).sort((a,b) => (a.s.done ? 1 : 0) - (b.s.done ? 1 : 0));
+    const rows = allTodo().map(e => ({ e, s: todoState(e) })).sort((a,b) => (a.s.done ? 1 : 0) - (b.s.done ? 1 : 0));
     const left = rows.filter(r => !r.s.done && !r.s.missing).length;
-    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在清單項目上長按，就能加進來。';
+    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在清單或「-」條列項目上長按，就能加進來。';
     rows.forEach(({ e, s }) => {
       const li = el('li', s.done ? 'done' : '');
       const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!s.done; cb.disabled = !!s.missing; cb.setAttribute('aria-label', e.text);
       cb.onchange = async () => {
         if (e.kind === 'memo'){ const i = findMemoItem(e.text); if (i >= 0) setMemoCheck(i, cb.checked); }
-        else {
+        else if (e.kind === 'task'){
           if (apiUrl && !me){ cb.checked = !cb.checked; return; }
           cb.disabled = true; await toggleCheck(e.key, cb.checked); cb.disabled = false;
         }
+        else store.set('tododone:' + e.key, cb.checked ? '1' : null);
         bump();
       };
       const body = el('div','body');
-      const t = el('div','t' + (s.struck ? ' struck' : ''), e.text + (s.missing ? '（已從筆記刪除）' : ''));
+      const t = el('div','t' + (s.struck ? ' struck' : ''));
+      if (e.kind === 'must') t.append(el('span','tag','必看'));
+      t.append(document.createTextNode(e.text + (s.missing ? '（已從筆記刪除）' : '')));
       body.append(t);
       if (e.meta){
         const b = el('button','from', e.from); b.type = 'button';
         b.onclick = () => {
+          if (e.meta.info){   // 活動資訊：展開該項並捲動過去
+            const det = [...document.querySelectorAll('#info details')].find(x => x.dataset.key === e.meta.info);
+            $('#todoDlg').close(); if (!det) return;
+            det.open = true; det.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+            return;
+          }
           if (!staff.some(x => x.name === e.meta.staff)) return;
           sel = e.meta.staff; store.set('sel:' + SRC, sel);
           const i = myTasks().findIndex(x => x.start === e.meta.start && x.title === e.meta.title);
@@ -999,11 +1100,11 @@ const CONFIG = {
         const sm = el('small'); sm.append(b); body.append(sm);
       } else if (e.from) body.append(el('small', null, e.from));
       const rm = el('button','rm','移除'); rm.type = 'button';
-      rm.onclick = () => { setImp(getImp().filter(x => x.key !== e.key)); bump(); };
+      rm.onclick = () => { if (e.kind === 'must') toggleDis(e.key); else { setImp(getImp().filter(x => x.key !== e.key)); bump(); } };
       li.append(cb, body, rm); ul.append(li);
     });
   }
-  $('#todoFab').onclick = () => { fillTodo(getImp()); $('#todoDlg').showModal(); };
+  $('#todoFab').onclick = () => { fillTodo(); $('#todoDlg').showModal(); };
   $('#todoDlg').querySelector('[data-close]').onclick = () => $('#todoDlg').close();
 
   function go(i){ const list = myTasks(); if (i < 0 || i >= list.length) return; viewIdx = i; renderNow(); renderTimeline(); renderVenue(); }
@@ -1072,7 +1173,7 @@ const CONFIG = {
       const sum = el('summary', null, it.title);
       const meta = [it.time, it.place].filter(Boolean).join('・'); if (meta) sum.append(el('small', null, meta));
       const body = el('div','info-body');
-      if (it.body) body.append(renderNote(it.body, `info|${it.cat}|${it.title}`, it.title, null));
+      if (it.body) body.append(renderNote(it.body, `info|${it.cat}|${it.title}`, it.title, { info: `${it.cat}|${it.title}` }));
       if (it.link) body.append(linkButtons(it.link));
       d.append(sum, body); box.append(d);
     });
