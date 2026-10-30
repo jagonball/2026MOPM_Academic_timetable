@@ -230,7 +230,9 @@ a.btn{text-decoration:none;display:inline-block}
 const CONFIG = {
   SHEET_ID: '',
   EVENT_NAME: '會議工作流程',
-  REFRESH_SECONDS: 30
+  REFRESH_SECONDS: 30,        // 試算表沒填「更新間隔（秒）」時的預設值
+  MIN_REFRESH_SECONDS: 15,    // 自動更新最短間隔
+  MANUAL_COOLDOWN_SECONDS: 10 // 試算表沒填「手動更新間隔（秒）」時的預設值
 };
 
 (function(){
@@ -278,6 +280,19 @@ const CONFIG = {
   // 顏色太接近背景時自動調深或調淺，確保看得清楚
   function fit(c, bg, min){ const target = lum(bg) > .4 ? [0,0,0] : WHITE; let t = 0, out = c; while (contrast(out, bg) < min && t < 1){ t += .05; out = mix(c, target, t); } return out; }
   const inkOn = c => contrast(WHITE, c) >= contrast(DARK_INK, c) ? WHITE : DARK_INK;
+  // 讀取 settings 分頁的某個項目（忽略空白，括號全形半形都可以）
+  function setting(settings, name){
+    const r = settings.find(x => String(x['項目'] || '').replace(/\s/g,'').replace(/\(/g,'（').replace(/\)/g,'）') === name);
+    return r ? String(r['內容'] || '').trim() : '';
+  }
+  function applyRefresh(settings){
+    const a = setting(settings, '更新間隔（秒）');
+    if (/不|手動|關|off|manual/i.test(a)) autoSec = 0;
+    else if (a !== '' && !isNaN(parseFloat(a))) { const n = parseFloat(a); autoSec = n <= 0 ? 0 : Math.max(CONFIG.MIN_REFRESH_SECONDS, n); }
+    else autoSec = CONFIG.REFRESH_SECONDS;
+    const c = setting(settings, '手動更新間隔（秒）');
+    cooldownSec = (c !== '' && !isNaN(parseFloat(c))) ? Math.max(0, parseFloat(c)) : CONFIG.MANUAL_COOLDOWN_SECONDS;
+  }
   function applyColors(settings){
     const get = name => { const r = settings.find(x => String(x['項目'] || '').replace(/\s/g,'').replace(/\(/g,'（').replace(/\)/g,'）') === name); return r ? parseHex(r['內容']) : null; };
     const accent = get('強調色'), accentD = get('強調色（深色模式）') || accent;
@@ -305,7 +320,8 @@ const CONFIG = {
   let apiUrl = '', checks = {}, checksVer = 0, pending = {};
   let me = params.get('who') || store.get('me:' + SHEET_ID) || store.get('me');
   let infos = [], infoSig = '', whoLabel = '';
-  let loaded = false, skipped = 0, lastSync = 0;
+  let loaded = false, skipped = 0, lastSync = 0, lastAttempt = 0;
+  let autoSec = CONFIG.REFRESH_SECONDS, cooldownSec = CONFIG.MANUAL_COOLDOWN_SECONDS;
   let sel = params.get('who') || store.get('sel:' + SHEET_ID) || store.get('sel');
   let viewIdx = null, lastAuto = -2;
   let simOffset = Number(store.get('sim')) || 0;
@@ -388,6 +404,7 @@ const CONFIG = {
     (raw.checks || []).forEach(r => { if (r['鍵值']) next[r['鍵值']] = { done: r['已完成'] === '是', by: r['勾選者'] || '', at: r['時間'] || '' }; });
     if (JSON.stringify(next) !== JSON.stringify(checks)){ checks = next; checksVer++; }
     applyColors(settings);
+    applyRefresh(settings);
     const labelRow = settings.find(r => r['項目'] === '身份稱呼');
     whoLabel = (labelRow && labelRow['內容']) || '';
     staff = (raw.staff || []).filter(r => r['姓名'] || r['身份']).map(r => ({ name: r['姓名'] || r['身份'], role: r['組別'] || r['說明'] || '' }));
@@ -410,7 +427,7 @@ const CONFIG = {
   }
   let loading = false;
   async function load(manual){
-    if (loading) return; loading = true;
+    if (loading) return; loading = true; lastAttempt = Date.now();
     $('#syncState').textContent = '讀取中…';
     try {
       const [settings, st, se, ta, ck, inf] = await Promise.all([
@@ -431,7 +448,7 @@ const CONFIG = {
         : loaded ? `目前無法連線，顯示的是 ${clockStr(lastSync)} 的資料。` : '無法讀取試算表，請確認網路連線與試算表 ID。');
     } finally {
       loading = false;
-      $('#syncState').textContent = lastSync ? `資料更新於 ${clockStr(lastSync)}` : '尚未讀取';
+      $('#syncState').textContent = lastSync ? `資料更新於 ${clockStr(lastSync)}${autoSec ? '' : '（手動更新）'}` : '尚未讀取';
       renderAll(); maybeAskWho();
     }
   }
@@ -737,10 +754,17 @@ const CONFIG = {
     if (Math.abs(dx) < 60) return; const i = Number($('#now').dataset.idx); go(dx < 0 ? i+1 : i-1);
   });
 
-  $('#refreshBtn').onclick = () => load(true);
+  $('#refreshBtn').onclick = () => {
+    const wait = Math.ceil((lastAttempt + cooldownSec * 1000 - Date.now()) / 1000);
+    if (loading) return;
+    if (wait > 0){ toast(`剛更新過，請 ${wait} 秒後再試`); return; }
+    load(true);
+  };
   $('#meBtn').onclick = () => askWho(showMine);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastSync > 15000) load(false); });
-  setInterval(() => { if (!document.hidden) load(false); }, CONFIG.REFRESH_SECONDS * 1000);
+  // 自動更新：依試算表的「更新間隔（秒）」；設為不自動更新時，只有開啟網頁和按「更新」時才讀取
+  const due = () => autoSec > 0 && !document.hidden && Date.now() - lastAttempt >= autoSec * 1000;
+  document.addEventListener('visibilitychange', () => { if (due()) load(false); });
+  setInterval(() => { if (due()) load(false); }, 5000);
   setInterval(() => { renderClock(); renderNow(); renderVenue(); }, 1000);
   bindSim();
   // 先顯示上次快取的資料，再向 Google 讀取最新內容
