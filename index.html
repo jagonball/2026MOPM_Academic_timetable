@@ -1071,7 +1071,7 @@ const CONFIG = {
     const ordered = saved.map(k => list.find(e => e.key === k)).filter(Boolean).concat(list.filter(e => !saved.includes(e.key)));
     const rows = ordered.map(e => ({ e, s: todoState(e) }));
     const left = rows.filter(r => !r.s.done && !r.s.missing).length;
-    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在清單或「-」條列項目上長按，就能加進來。';
+    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在勾選項目或 •條列項目上長按，就能加進來。';
     setTimeout(() => makeSortable(ul, saveTodoOrder, 'li'));
     rows.forEach(({ e, s }) => {
       const li = el('li', s.done ? 'done' : ''); li.dataset.key = e.key;
