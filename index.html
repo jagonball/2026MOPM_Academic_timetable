@@ -166,6 +166,20 @@ a.btn{text-decoration:none;display:inline-block}
 
 <main id="app">
   <div class="warn" id="warn" hidden></div>
+  <section class="card" id="exportCard" hidden>
+    <h2>匯出資料檔</h2>
+    <p class="empty" id="exportSummary" style="margin-bottom:12px"></p>
+    <label style="display:grid;gap:4px;font-size:14px;color:var(--muted)">檔案名稱（英文、數字、- 或 _）
+      <input id="exportName" type="text" value="event-data.json" autocomplete="off" style="font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)">
+    </label>
+    <p class="msg" id="exportMsg"></p>
+    <button class="btn primary" id="exportBtn" type="button">下載資料檔</button>
+    <div id="exportOut" hidden style="margin-top:14px">
+      <p style="margin:0 0 6px;font-size:15px">把檔案上傳到 GitHub 後，分享這個連結：</p>
+      <div class="out" id="exportLink" style="word-break:break-all;background:var(--bg);padding:8px 10px;border-radius:8px;font-size:14px;margin-bottom:10px"></div>
+      <button class="btn" id="exportCopy" type="button">複製連結</button>
+    </div>
+  </section>
   <section class="card now" id="now" aria-live="polite"><p class="empty">正在讀取工作流程…</p></section>
   <section class="card" id="venue"></section>
   <section class="card">
@@ -173,11 +187,11 @@ a.btn{text-decoration:none;display:inline-block}
     <ol class="tl" id="timeline"></ol>
   </section>
   <section class="card info" id="infoCard" hidden>
-    <h2>活動資訊</h2>
+    <h2 id="infoTitle">活動資訊</h2>
     <div id="info"></div>
   </section>
   <section class="card memo" id="memoCard" hidden>
-    <h2><span>我的記事本</span><span class="hint" id="memoState"></span></h2>
+    <h2><span id="memoTitle">我的記事本</span><span class="hint" id="memoState"></span></h2>
     <textarea id="memo" placeholder="隨手記錄。只存在這支手機的瀏覽器裡，其他人看不到。" aria-label="我的記事本"></textarea>
   </section>
 </main>
@@ -243,6 +257,11 @@ const CONFIG = {
   };
   const params = new URLSearchParams(location.search);
   const SHEET_ID = (CONFIG.SHEET_ID || params.get('sheet') || '').trim();
+  // 資料固化：?data=檔名.json 時改讀 GitHub 上的資料檔（只接受同一網站內、英數檔名）
+  const DATA_PARAM = SHEET_ID ? '' : (params.get('data') || '').trim();
+  const DATA_FILE = /^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.json$/.test(DATA_PARAM) ? DATA_PARAM : '';
+  const SRC = SHEET_ID || (DATA_FILE ? 'data:' + DATA_FILE : '');
+  const EXPORT = !!SHEET_ID && params.get('export') === '1';
 
   /* ---------- 外觀：自動／淺色／深色（記在這支手機） ---------- */
   const THEMES = ['auto','light','dark'], THEME_NAMES = { auto: '自動', light: '淺色', dark: '深色' };
@@ -292,6 +311,25 @@ const CONFIG = {
     else autoSec = CONFIG.REFRESH_SECONDS;
     const c = setting(settings, '手動更新間隔（秒）');
     cooldownSec = (c !== '' && !isNaN(parseFloat(c))) ? Math.max(0, parseFloat(c)) : CONFIG.MANUAL_COOLDOWN_SECONDS;
+    const s = setting(settings, '顯示更新按鈕');
+    const hideBtn = /否|不|隱藏|關|no|off|false/i.test(s);
+    document.getElementById('refreshBtn').hidden = hideBtn;
+    document.getElementById('syncState').hidden = hideBtn;   // 不顯示更新按鈕時，也不顯示更新時間
+  }
+  const NO = /^(否|不|不顯示|隱藏|關|關閉|no|off|false)$/i;
+  function applyLabels(settings){
+    const v = setting(settings, '會場現在標題');
+    L.venueHidden = NO.test(v);
+    L.venueNow = (!L.venueHidden && v) || '會場現在';
+    L.venueOther = setting(settings, '其他時段標題') || '這段時間的議程';
+    L.word = setting(settings, '議程稱呼') || '議程';
+    document.getElementById('infoTitle').textContent = setting(settings, '活動資訊標題') || '活動資訊';
+    document.getElementById('memoTitle').textContent = setting(settings, '記事本標題') || '我的記事本';
+    // 公開活動可以關閉模擬時間，避免使用者誤觸
+    simAllowed = !NO.test(setting(settings, '模擬時間'));
+    const clk = document.getElementById('clock');
+    clk.title = simAllowed ? '設定模擬時間' : ''; clk.style.cursor = simAllowed ? '' : 'default';
+    if (!simAllowed && simOffset){ simOffset = 0; store.set('sim', null); }
   }
   function applyColors(settings){
     const get = name => { const r = settings.find(x => String(x['項目'] || '').replace(/\s/g,'').replace(/\(/g,'（').replace(/\)/g,'）') === name); return r ? parseHex(r['內容']) : null; };
@@ -318,13 +356,14 @@ const CONFIG = {
 
   let staff = [], tasks = [], sessions = [], eventName = CONFIG.EVENT_NAME;
   let apiUrl = '', checks = {}, checksVer = 0, pending = {};
-  let me = params.get('who') || store.get('me:' + SHEET_ID) || store.get('me');
+  let me = params.get('who') || store.get('me:' + SRC) || store.get('me');
   let infos = [], infoSig = '', whoLabel = '';
-  let loaded = false, skipped = 0, lastSync = 0, lastAttempt = 0;
+  let loaded = false, skipped = 0, lastSync = 0, lastAttempt = 0, lastRaw = null;
   let autoSec = CONFIG.REFRESH_SECONDS, cooldownSec = CONFIG.MANUAL_COOLDOWN_SECONDS;
-  let sel = params.get('who') || store.get('sel:' + SHEET_ID) || store.get('sel');
+  let sel = params.get('who') || store.get('sel:' + SRC) || store.get('sel');
   let viewIdx = null, lastAuto = -2;
-  let simOffset = Number(store.get('sim')) || 0;
+  let simOffset = Number(store.get('sim')) || 0, simAllowed = true;
+  let L = { venueNow: '會場現在', venueOther: '這段時間的議程', venueHidden: false, word: '議程' };
 
   const now = () => Date.now() + simOffset;
   const pad = n => String(n).padStart(2,'0');
@@ -332,12 +371,13 @@ const CONFIG = {
   const hm = s => s.split('T')[1];
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const clockStr = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
-  function bigDur(ms){ const s = Math.max(0, Math.floor(ms/1000)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return h ? `${h}:${pad(m)}:${pad(x)}` : `${pad(m)}:${pad(x)}`; }
-  function wordDur(ms){ const m = Math.max(0, Math.ceil(ms/60000)); const h = Math.floor(m/60); return h ? `${h} 小時 ${m%60} 分` : `${m} 分鐘`; }
+  function bigDur(ms){ const s = Math.max(0, Math.floor(ms/1000)); if (s >= 86400) return `${Math.floor(s/86400)} 天 ${Math.floor(s%86400/3600)} 小時`; const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return h ? `${h}:${pad(m)}:${pad(x)}` : `${pad(m)}:${pad(x)}`; }
+  function wordDur(ms){ const m = Math.max(0, Math.ceil(ms/60000)); const h = Math.floor(m/60); if (h >= 24) return `${Math.floor(h/24)} 天 ${h%24} 小時`; return h ? `${h} 小時 ${m%60} 分` : `${m} 分鐘`; }
   function toast(t){ const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(()=>e.classList.remove('show'), 2200); }
 
   /* ---------- 設定畫面（沒有試算表 ID 時） ---------- */
-  if (!SHEET_ID){
+  if (!SRC){
+    if (DATA_PARAM) setTimeout(() => { $('#setupMsg').textContent = '資料檔名稱只能使用英文、數字、- 和 _，並以 .json 結尾。'; });
     $('#app').hidden = true; $('#setup').hidden = false; $('#staff').hidden = true;
     $('#syncState').textContent = '尚未設定資料來源'; $('#refreshBtn').hidden = true;
     $('#makeLink').onclick = () => {
@@ -399,12 +439,13 @@ const CONFIG = {
     const nameRow = settings.find(r => r['項目'] === '會議名稱');
     eventName = (nameRow && nameRow['內容']) || CONFIG.EVENT_NAME;
     const apiRow = settings.find(r => r['項目'] === '勾選同步網址');
-    apiUrl = (apiRow && /^https:\/\/script\.google\.com\//.test(apiRow['內容'])) ? apiRow['內容'] : '';
+    apiUrl = (!DATA_FILE && apiRow && /^https:\/\/script\.google\.com\//.test(apiRow['內容'])) ? apiRow['內容'] : '';
     const next = {};
     (raw.checks || []).forEach(r => { if (r['鍵值']) next[r['鍵值']] = { done: r['已完成'] === '是', by: r['勾選者'] || '', at: r['時間'] || '' }; });
     if (JSON.stringify(next) !== JSON.stringify(checks)){ checks = next; checksVer++; }
     applyColors(settings);
     applyRefresh(settings);
+    applyLabels(settings);
     const labelRow = settings.find(r => r['項目'] === '身份稱呼');
     whoLabel = (labelRow && labelRow['內容']) || '';
     staff = (raw.staff || []).filter(r => r['姓名'] || r['身份']).map(r => ({ name: r['姓名'] || r['身份'], role: r['組別'] || r['說明'] || '' }));
@@ -430,27 +471,61 @@ const CONFIG = {
     if (loading) return; loading = true; lastAttempt = Date.now();
     $('#syncState').textContent = '讀取中…';
     try {
-      const [settings, st, se, ta, ck, inf] = await Promise.all([
-        fetchSheet('settings').catch(() => []), fetchSheet('staff'), fetchSheet('sessions'), fetchSheet('tasks'), fetchSheet('checks').catch(() => []), fetchSheet('info').catch(() => [])
+      let raw;
+      if (DATA_FILE){
+        const res = await fetch(DATA_FILE, { cache: 'no-cache' });
+        if (!res.ok) throw new Error('nofile');
+        const obj = await res.json().catch(() => { throw new Error('badfile'); });
+        if (!obj || !obj.raw || !Array.isArray(obj.raw.tasks)) throw new Error('badfile');
+        raw = Object.assign({ settings: [], staff: [], sessions: [], tasks: [], info: [] }, obj.raw, { checks: [] });
+      } else {
+      const [settings, st, se, ta, inf] = await Promise.all([
+        fetchSheet('settings').catch(() => []), fetchSheet('staff'), fetchSheet('sessions'), fetchSheet('tasks'), fetchSheet('info').catch(() => [])
       ]);
-      const raw = { settings, staff: st, sessions: se, tasks: ta, checks: ck, info: inf };
-      apply(raw); lastSync = Date.now();
-      store.set('cache:' + SHEET_ID, JSON.stringify({ at: lastSync, raw }));
+      // 只有設定了勾選同步網址，才讀取 checks 分頁
+      const ck = /^https:\/\/script\.google\.com\//.test(setting(settings, '勾選同步網址')) ? await fetchSheet('checks').catch(() => []) : [];
+      raw = { settings, staff: st, sessions: se, tasks: ta, checks: ck, info: inf };
+      }
+      apply(raw); lastSync = Date.now(); lastRaw = raw;
+      if (EXPORT) showExport();
+      store.set('cache:' + SRC, JSON.stringify({ at: lastSync, raw }));
       setWarn(skipped ? `試算表中有 ${skipped} 列的日期、時間或必填欄位格式不正確，已略過。` : '');
       if (manual) toast('已更新');
     } catch(err){
       if (!loaded){
-        const c = store.get('cache:' + SHEET_ID);
+        const c = store.get('cache:' + SRC);
         if (c){ try { const o = JSON.parse(c); apply(o.raw); lastSync = o.at; } catch(e){} }
       }
-      setWarn(err.message === 'private'
-        ? '讀不到試算表：請把共用設定改為「知道連結的任何人」可以檢視。'
-        : loaded ? `目前無法連線，顯示的是 ${clockStr(lastSync)} 的資料。` : '無法讀取試算表，請確認網路連線與試算表 ID。');
+      setWarn(err.message === 'private' ? '讀不到試算表：請把共用設定改為「知道連結的任何人」可以檢視。'
+        : err.message === 'nofile' && !loaded ? `找不到資料檔 ${DATA_FILE}，請確認檔案已上傳到 GitHub，檔名大小寫也要一致。`
+        : err.message === 'badfile' && !loaded ? '資料檔格式不正確，請重新匯出後再上傳。'
+        : loaded ? `目前無法連線，顯示的是 ${clockStr(lastSync)} 的資料。`
+        : DATA_FILE ? '無法讀取資料檔，請確認網路連線。' : '無法讀取試算表，請確認網路連線與試算表 ID。');
     } finally {
       loading = false;
-      $('#syncState').textContent = lastSync ? `資料更新於 ${clockStr(lastSync)}${autoSec ? '' : '（手動更新）'}` : '尚未讀取';
+      $('#syncState').textContent = lastSync ? `資料更新於 ${clockStr(lastSync)}${(autoSec || $('#refreshBtn').hidden) ? '' : '（手動更新）'}` : '尚未讀取';
       renderAll(); maybeAskWho();
     }
+  }
+  /* ---------- 匯出資料檔（?sheet=…&export=1） ---------- */
+  function showExport(){
+    const card = $('#exportCard'); card.hidden = false;
+    const cnt = n => (lastRaw[n] || []).length;
+    $('#exportSummary').textContent = `${eventName}：身份 ${staff.length} 種、個人流程 ${cnt('tasks')} 列、會場時程 ${cnt('sessions')} 列、活動資訊 ${cnt('info')} 項。` + (skipped ? `另有 ${skipped} 列格式不正確，匯出前請先修正。` : '');
+    $('#exportBtn').onclick = () => {
+      const name = $('#exportName').value.trim();
+      if (!/^[A-Za-z0-9_-]+\.json$/.test(name)){ $('#exportMsg').textContent = '檔名只能使用英文、數字、- 和 _，並以 .json 結尾。'; return; }
+      $('#exportMsg').textContent = '';
+      const settings = (lastRaw.settings || []).filter(r => !/勾選同步網址/.test(r['項目'] || ''));
+      const payload = { format: 'event-flow', version: 1, exportedAt: new Date().toISOString(),
+        raw: { settings, staff: lastRaw.staff || [], sessions: lastRaw.sessions || [], tasks: lastRaw.tasks || [], info: lastRaw.info || [] } };
+      const blob = new Blob([JSON.stringify(payload, null, 1)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      const link = `${location.origin}${location.pathname}?data=${name}`;
+      $('#exportLink').textContent = link; $('#exportOut').hidden = false;
+      $('#exportCopy').onclick = () => navigator.clipboard.writeText(link).then(() => toast('已複製連結'), () => toast('無法自動複製，請手動選取'));
+    };
   }
   function setWarn(t){ const w = $('#warn'); w.textContent = t; w.hidden = !t; }
 
@@ -474,7 +549,7 @@ const CONFIG = {
       const b = el('button','chip'); b.type = 'button';
       b.append(document.createTextNode(s.name)); b.append(el('small', null, s.role));
       b.setAttribute('aria-pressed', String(s.name === sel));
-      b.onclick = () => { sel = s.name; store.set('sel:' + SHEET_ID, sel); viewIdx = null; lastAuto = -2; renderAll(); };
+      b.onclick = () => { sel = s.name; store.set('sel:' + SRC, sel); viewIdx = null; lastAuto = -2; renderAll(); };
       nav.append(b);
     });
     $('#eventName').textContent = eventName; document.title = eventName;
@@ -604,7 +679,7 @@ const CONFIG = {
       if (m){
         if (!ul){ ul = el('ul'); box.append(ul); }
         const text = m[2].trim(); seen[text] = (seen[text] || 0) + 1;
-        const key = apiUrl ? `${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}` : `chk:${SHEET_ID}:${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}`;
+        const key = apiUrl ? `${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}` : `chk:${SRC}:${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}`;
         const st = checkState(key, !!m[1]);
         const li = el('li'); const lab = el('label'); const cb = el('input');
         cb.type = 'checkbox'; cb.checked = st.done;
@@ -637,7 +712,7 @@ const CONFIG = {
     $('#whoTitle').textContent = whoLabel ? `你的${whoLabel}是？` : '你是哪一位？';
     staff.forEach(s => {
       const b = el('button','chip'); b.type = 'button'; b.append(document.createTextNode(s.name), el('small',null,s.role));
-      b.onclick = () => { me = s.name; store.set('me:' + SHEET_ID, me); dlg.close(); renderMe(); renderMemo(); if (then) then(); };
+      b.onclick = () => { me = s.name; store.set('me:' + SRC, me); dlg.close(); renderMe(); renderMemo(); if (then) then(); };
       list.append(b);
     });
     dlg.querySelector('[data-close]').onclick = () => dlg.close();
@@ -645,16 +720,16 @@ const CONFIG = {
   }
   function renderMe(){ const b = $('#meBtn'); b.hidden = !staff.length; b.textContent = me ? `我是 ${me}` : '設定我是誰'; }
   // 選好「我是誰」後，自動切換到自己的流程
-  const showMine = () => { sel = me; store.set('sel:' + SHEET_ID, sel); viewIdx = null; lastAuto = -2; renderAll(); };
+  const showMine = () => { sel = me; store.set('sel:' + SRC, sel); viewIdx = null; lastAuto = -2; renderAll(); };
   let askedWho = false;
   function maybeAskWho(){
-    if (askedWho || me || !staff.length) return;
+    if (EXPORT || askedWho || me || !staff.length) return;
     askedWho = true; askWho(showMine);
   }
 
   /* ---------- 個人記事本（只存在這支手機） ---------- */
   let memoTimer = null;
-  const memoKey = () => `memo:${SHEET_ID}:${me}`;
+  const memoKey = () => `memo:${SRC}:${me}`;
   function renderMemo(){
     const card = $('#memoCard');
     card.hidden = !(me && sel === me);
@@ -678,23 +753,24 @@ const CONFIG = {
 
   function renderVenue(){
     const box = $('#venue'); const n = now(); const list = myTasks();
-    if (!loaded){ box.replaceChildren(); return; }
+    box.hidden = L.venueHidden;
+    if (!loaded || L.venueHidden){ box.replaceChildren(); return; }
     const sorted = sessions.slice().sort((a,b) => a.start < b.start ? -1 : 1);
     const idx = Number($('#now').dataset.idx);
     const viewing = (viewIdx != null && list[idx]) ? list[idx] : null;
     const frag = document.createDocumentFragment();
     if (viewing && stateOf(viewing, n) !== 'live'){
-      frag.append(el('h2',null,'這段時間的議程'));
+      frag.append(el('h2',null,L.venueOther));
       const vs = parse(viewing.start), ve = parse(viewing.end);
       const rows = sorted.filter(x => parse(x.start) < ve && parse(x.end) > vs);
-      if (!rows.length) frag.append(el('p','empty','這段時間沒有排定議程。'));
+      if (!rows.length) frag.append(el('p','empty',`這段時間沒有排定${L.word}。`));
       rows.forEach(x => frag.append(sessRow(x, false, n)));
     } else {
-      frag.append(el('h2',null,'會場現在'));
+      frag.append(el('h2',null,L.venueNow));
       const rows = sorted.filter(x => parse(x.start) <= n && n < parse(x.end));
       rows.forEach(x => frag.append(sessRow(x, true, n)));
       const up = sorted.find(x => parse(x.start) > n);
-      if (!rows.length) frag.append(el('p','empty', up ? `目前沒有議程進行。下一場「${up.title}」${wordDur(parse(up.start)-n)}後開始。` : '議程已全部結束。'));
+      if (!rows.length) frag.append(el('p','empty', up ? `目前沒有${L.word}進行。下一場「${up.title}」${wordDur(parse(up.start)-n)}後開始。` : `${L.word}已全部結束。`));
       else if (up){ const p = el('p','empty',`接著：${hm(up.start)}「${up.title}」`); p.style.marginTop = '10px'; p.style.fontSize = '14px'; frag.append(p); }
     }
     box.replaceChildren(frag);
@@ -768,7 +844,7 @@ const CONFIG = {
   setInterval(() => { renderClock(); renderNow(); renderVenue(); }, 1000);
   bindSim();
   // 先顯示上次快取的資料，再向 Google 讀取最新內容
-  const cached = store.get('cache:' + SHEET_ID);
+  const cached = store.get('cache:' + SRC);
   if (cached){ try { const o = JSON.parse(cached); apply(o.raw); lastSync = o.at; } catch(e){} }
   renderAll(); maybeAskWho(); load(false);
 
@@ -776,12 +852,12 @@ const CONFIG = {
   function bindSim(){
     const simDlg = $('#simDlg');
     document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
-    $('#clock').onclick = () => { const d = new Date(now()); $('#simInput').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; simDlg.showModal(); };
+    $('#clock').onclick = () => { if (!simAllowed) return; const d = new Date(now()); $('#simInput').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; simDlg.showModal(); };
     $('#simForm').addEventListener('submit', ev => {
       ev.preventDefault(); const v = $('#simInput').value; if (!v) return;
-      simOffset = parse(v) - Date.now(); store.set('sim', String(simOffset)); viewIdx = null; lastAuto = -2; simDlg.close(); if (SHEET_ID) renderAll(); else renderClock(); toast('已切換為模擬時間');
+      simOffset = parse(v) - Date.now(); store.set('sim', String(simOffset)); viewIdx = null; lastAuto = -2; simDlg.close(); if (SRC) renderAll(); else renderClock(); toast('已切換為模擬時間');
     });
-    $('#simReset').onclick = () => { simOffset = 0; store.set('sim', null); viewIdx = null; lastAuto = -2; simDlg.close(); if (SHEET_ID) renderAll(); else renderClock(); toast('已恢復實際時間'); };
+    $('#simReset').onclick = () => { simOffset = 0; store.set('sim', null); viewIdx = null; lastAuto = -2; simDlg.close(); if (SRC) renderAll(); else renderClock(); toast('已恢復實際時間'); };
   }
 })();
 </script>
