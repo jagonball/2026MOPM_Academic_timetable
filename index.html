@@ -92,7 +92,6 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .note .must label{display:flex;flex:none;cursor:pointer}
 .note .must input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
 .note .must .star{flex:none;color:var(--accent);font-weight:700}
-.note .must .txt{font-weight:700}
 .note .must.done .txt{color:var(--muted)}
 .note .must.off{border-style:dashed}
 .note ul.bul li{gap:8px;padding:3px 0}
@@ -772,7 +771,7 @@ const CONFIG = {
       note.split(/\r?\n/).forEach(line => {
         const m = line.match(MUST_RE); if (!m) return;
         const t = m[1].trim(); seen[t] = (seen[t] || 0) + 1;
-        out.push({ key: mustKey(taskKey, t, seen[t]), kind: 'must', text: plainOf(t), from, meta });
+        out.push({ key: mustKey(taskKey, t, seen[t]), kind: 'must', text: plainOf(t), raw: t, from, meta });
       });
     };
     tasks.filter(t => t.staff === who && t.note).sort((a,b) => a.start < b.start ? -1 : 1)
@@ -826,7 +825,7 @@ const CONFIG = {
           li.classList.toggle('imp', on); li.classList.toggle('done', on && store.get('tododone:' + key) === '1');
           const span = el('span','txt'); richText(span, t); span.classList.toggle('struck', store.get('strike:' + key) === '1');
           const item = el('span','item'); item.append(span);
-          pressable(item, strikeToggle(span, key), () => toggleImp({ key, kind: 'bullet', text: plainOf(t), from: from || '', meta: meta || null }));
+          pressable(item, strikeToggle(span, key), () => toggleImp({ key, kind: 'bullet', text: plainOf(t), raw: t, from: from || '', meta: meta || null }));
           li.append(el('span','dot','•'), item); bl.append(li);
           return;
         }
@@ -859,7 +858,7 @@ const CONFIG = {
           const item = el('span','item'); item.append(span, who);
           pressable(item,
             () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); renderTodo(); },
-            () => toggleImp({ key, kind: 'task', text: plainOf(text), from: from || '', def, meta: meta || null }));
+            () => toggleImp({ key, kind: 'task', text: plainOf(text), raw: text, from: from || '', def, meta: meta || null }));
           lab.append(cb); li.append(lab, item); ul.append(li); items.push(cb);
         } else {
           ul = null; bl = null;
@@ -1053,12 +1052,12 @@ const CONFIG = {
     const done = () => store.get('tododone:' + e.key) === '1';
     if (e.kind === 'memo'){
       const i = findMemoItem(e.text); if (i < 0) return { missing: true };
-      const m = memoLines()[i].match(ITEM_RE); return { done: !!m[2], struck: /^~~.*~~$/.test(m[3].trim()) };
+      const m = memoLines()[i].match(ITEM_RE); return { done: !!m[2], struck: /^~~.*~~$/.test(m[3].trim()), raw: m[3].trim() };
     }
     if (e.kind === 'memobul'){
       const line = memoLines().find(l => { const m = !l.match(ITEM_RE) && l.match(BUL_RE); return m && plainOf(m[1]) === e.text; });
       if (!line) return { missing: true };
-      return { done: done(), struck: /^~~.*~~$/.test(line.match(BUL_RE)[1].trim()) };
+      const r = line.match(BUL_RE)[1].trim(); return { done: done(), struck: /^~~.*~~$/.test(r), raw: r };
     }
     if (e.kind === 'must' || e.kind === 'bullet') return { done: done(), struck: store.get('strike:' + e.key) === '1' };
     return { done: checkState(e.key, e.def).done, struck: store.get('strike:' + e.key) === '1' };
@@ -1087,12 +1086,15 @@ const CONFIG = {
       const body = el('div','body');
       const t = el('div','t' + (s.struck ? ' struck' : ''));
       if (e.kind === 'must') t.append(el('span','tag','必看'));
-      t.append(document.createTextNode(e.text + (s.missing ? '（已從筆記刪除）' : '')));
+      let raw = s.raw || e.raw || e.text;
+      if (/^~~.*~~$/.test(raw)) raw = raw.slice(2,-2);
+      const rt = el('span'); richText(rt, raw); t.append(rt);
+      if (s.missing) t.append(document.createTextNode('（已從筆記刪除）'));
       // 點文字：加上或取消刪除線（與原本位置同步）
       if (!s.missing){
         t.tabIndex = 0; t.setAttribute('role','button'); t.setAttribute('aria-label', `${e.text}，點一下${s.struck ? '取消' : '加上'}刪除線`);
         const strike = () => { toggleTodoStrike(e); bump(); };
-        t.onclick = strike; t.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); strike(); } };
+        t.onclick = ev => { if (ev.target.closest('a')) return; strike(); }; t.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); strike(); } };
       }
       body.append(t);
       if (e.meta){
