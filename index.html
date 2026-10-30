@@ -130,6 +130,17 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
 .setup input{font:inherit;font-size:16px;width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 .setup .out{word-break:break-all;background:var(--bg);padding:8px 10px;border-radius:8px;font-size:14px;margin:10px 0}
 a.btn{text-decoration:none;display:inline-block}
+.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.also{margin:12px 0 0;font-size:14px;color:var(--muted)}
+.also .linkbtn{font-size:14px;margin-right:8px}
+.note a,.info-body a{color:var(--accent);word-break:break-all}
+.info-cat{font-size:13px;font-weight:700;color:var(--muted);margin:16px 0 2px}
+.info-cat:first-child{margin-top:0}
+.info details{border-top:1px solid var(--line)}
+.info summary{cursor:pointer;padding:10px 0;font-weight:700;list-style-position:outside}
+.info summary small{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.info-body{padding:0 0 12px}
+.info-body .note{margin-top:0}
 .memo textarea{font:inherit;font-size:16px;line-height:1.6;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-height:9em;resize:vertical}
 .memo .hint{font-size:13px;color:var(--muted);font-weight:400}
 </style>
@@ -144,7 +155,7 @@ a.btn{text-decoration:none;display:inline-block}
     <button class="clock num" id="clock" type="button" title="設定模擬時間">--:--:--</button>
     <span class="sim-badge">模擬</span>
   </div>
-  <nav class="staff" id="staff" aria-label="選擇工作人員"></nav>
+  <nav class="staff" id="staff" aria-label="選擇身份"></nav>
 </header>
 
 <main id="app">
@@ -154,6 +165,10 @@ a.btn{text-decoration:none;display:inline-block}
   <section class="card">
     <h2><span id="tlTitle">全天流程</span></h2>
     <ol class="tl" id="timeline"></ol>
+  </section>
+  <section class="card info" id="infoCard" hidden>
+    <h2>活動資訊</h2>
+    <div id="info"></div>
   </section>
   <section class="card memo" id="memoCard" hidden>
     <h2><span>我的記事本</span><span class="hint" id="memoState"></span></h2>
@@ -167,9 +182,9 @@ a.btn{text-decoration:none;display:inline-block}
     <p>貼上 Google 試算表的網址。試算表需要設定為「知道連結的任何人都能檢視」。</p>
     <input id="sheetUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/…/edit" autocomplete="off">
     <p class="msg" id="setupMsg"></p>
-    <button class="btn primary" id="makeLink" type="button">產生工作人員連結</button>
+    <button class="btn primary" id="makeLink" type="button">產生分享連結</button>
     <div id="linkOut" hidden>
-      <p>把這個連結傳給工作人員（加入書籤或加到主畫面）：</p>
+      <p>把這個連結分享出去（可以加入書籤或加到主畫面）：</p>
       <div class="out" id="linkText"></div>
       <button class="btn" id="copyLink" type="button">複製連結</button>
       <a class="btn primary" id="openLink">開啟</a>
@@ -179,8 +194,8 @@ a.btn{text-decoration:none;display:inline-block}
 
 <dialog id="whoDlg">
   <form class="dlg" method="dialog">
-    <h3>你是哪一位？</h3>
-    <p style="margin:0;font-size:14px;color:var(--muted)">勾選清單時會記錄是誰完成的，所有人都看得到。只需要選一次。</p>
+    <h3 id="whoTitle">你是哪一位？</h3>
+    <p style="margin:0;font-size:14px;color:var(--muted)">選好後會直接顯示你的專屬流程，之後可以從上方按鈕更換。</p>
     <div class="staff" id="whoList" style="flex-wrap:wrap;padding:0"></div>
     <div class="acts"><button type="button" class="btn" data-close>取消</button></div>
   </form>
@@ -223,9 +238,10 @@ const CONFIG = {
 
   let staff = [], tasks = [], sessions = [], eventName = CONFIG.EVENT_NAME;
   let apiUrl = '', checks = {}, checksVer = 0, pending = {};
-  let me = params.get('who') || store.get('me');
+  let me = params.get('who') || store.get('me:' + SHEET_ID) || store.get('me');
+  let infos = [], infoSig = '', whoLabel = '';
   let loaded = false, skipped = 0, lastSync = 0;
-  let sel = params.get('who') || store.get('sel');
+  let sel = params.get('who') || store.get('sel:' + SHEET_ID) || store.get('sel');
   let viewIdx = null, lastAuto = -2;
   let simOffset = Number(store.get('sim')) || 0;
 
@@ -306,13 +322,24 @@ const CONFIG = {
     const next = {};
     (raw.checks || []).forEach(r => { if (r['鍵值']) next[r['鍵值']] = { done: r['已完成'] === '是', by: r['勾選者'] || '', at: r['時間'] || '' }; });
     if (JSON.stringify(next) !== JSON.stringify(checks)){ checks = next; checksVer++; }
-    staff = (raw.staff || []).filter(r => r['姓名']).map(r => ({ name: r['姓名'], role: r['組別'] || '' }));
+    const labelRow = settings.find(r => r['項目'] === '身份稱呼');
+    whoLabel = (labelRow && labelRow['內容']) || '';
+    staff = (raw.staff || []).filter(r => r['姓名'] || r['身份']).map(r => ({ name: r['姓名'] || r['身份'], role: r['組別'] || r['說明'] || '' }));
     sessions = [];
     (raw.sessions || []).forEach(r => { const t = slot(r); if (t && r['議程']) sessions.push(Object.assign(t, { title: r['議程'], place: r['地點'] || '' })); else skipped++; });
     tasks = [];
-    (raw.tasks || []).forEach(r => { const t = slot(r); if (t && r['工作人員'] && r['任務']) tasks.push(Object.assign(t, { staff: r['工作人員'], title: r['任務'], place: r['地點'] || '', note: r['備註'] || '' })); else skipped++; });
+    (raw.tasks || []).forEach(r => {
+      const t = slot(r); const whoCell = r['身份'] || r['工作人員'] || ''; const title = r['任務'] || r['事項'] || '';
+      if (!t || !whoCell || !title){ skipped++; return; }
+      // 「身份」欄可填多個（用頓號或逗號分隔），或填「全部」
+      let whos = whoCell.split(/[,，、;；\n]/).map(s => s.trim()).filter(Boolean);
+      if (whos.includes('全部')) whos = staff.map(s => s.name);
+      whos.forEach(w => tasks.push(Object.assign({}, t, { staff: w, title, place: r['地點'] || '', note: r['備註'] || '', link: r['連結'] || '' })));
+    });
+    infos = (raw.info || []).filter(r => r['標題']).map(r => ({ cat: r['分類'] || '', title: r['標題'], place: r['地點'] || '', time: r['時間'] || '', body: r['內容'] || '', link: r['連結'] || '' }));
     tasks.forEach(t => { if (!staff.some(s => s.name === t.staff)) staff.push({ name: t.staff, role: '' }); });
-    if (!sel || !staff.some(s => s.name === sel)) sel = staff[0] ? staff[0].name : null;
+    if (me && !staff.some(s => s.name === me)) me = null;
+    if (!sel || !staff.some(s => s.name === sel)) sel = me || (staff[0] ? staff[0].name : null);
     loaded = true; lastAuto = -2;
   }
   let loading = false;
@@ -320,10 +347,10 @@ const CONFIG = {
     if (loading) return; loading = true;
     $('#syncState').textContent = '讀取中…';
     try {
-      const [settings, st, se, ta, ck] = await Promise.all([
-        fetchSheet('settings').catch(() => []), fetchSheet('staff'), fetchSheet('sessions'), fetchSheet('tasks'), fetchSheet('checks').catch(() => [])
+      const [settings, st, se, ta, ck, inf] = await Promise.all([
+        fetchSheet('settings').catch(() => []), fetchSheet('staff'), fetchSheet('sessions'), fetchSheet('tasks'), fetchSheet('checks').catch(() => []), fetchSheet('info').catch(() => [])
       ]);
-      const raw = { settings, staff: st, sessions: se, tasks: ta, checks: ck };
+      const raw = { settings, staff: st, sessions: se, tasks: ta, checks: ck, info: inf };
       apply(raw); lastSync = Date.now();
       store.set('cache:' + SHEET_ID, JSON.stringify({ at: lastSync, raw }));
       setWarn(skipped ? `試算表中有 ${skipped} 列的日期、時間或必填欄位格式不正確，已略過。` : '');
@@ -364,7 +391,7 @@ const CONFIG = {
       const b = el('button','chip'); b.type = 'button';
       b.append(document.createTextNode(s.name)); b.append(el('small', null, s.role));
       b.setAttribute('aria-pressed', String(s.name === sel));
-      b.onclick = () => { sel = s.name; store.set('sel', sel); viewIdx = null; lastAuto = -2; renderAll(); };
+      b.onclick = () => { sel = s.name; store.set('sel:' + SHEET_ID, sel); viewIdx = null; lastAuto = -2; renderAll(); };
       nav.append(b);
     });
     $('#eventName').textContent = eventName; document.title = eventName;
@@ -372,13 +399,13 @@ const CONFIG = {
   function renderNow(){
     const box = $('#now'); const list = myTasks(); const n = now();
     if (!loaded) return;
-    const msg = !staff.length ? '試算表裡還沒有工作人員資料。' : !list.length ? `${sel} 目前沒有排定任務。` : '';
+    const msg = !staff.length ? '試算表裡還沒有身份資料。' : !list.length ? `${sel} 目前沒有排定事項。` : '';
     if (msg){ box.className = 'card now'; box.dataset.sig = ''; box.replaceChildren(el('p','empty',msg)); return; }
     const auto = autoIndex(list, n);
     const idx = viewIdx == null ? auto : Math.min(Math.max(viewIdx,0), list.length-1);
     const t = list[idx], st = stateOf(t, n), s = parse(t.start), e = parse(t.end);
     // 內容沒變時只更新倒數與進度條，避免每秒重畫打斷勾選
-    const sig = [sel, idx, auto, list.length, viewIdx == null, st, t.start, t.end, t.title, t.place, t.note, checksVer].join('\u0001');
+    const sig = [sel, idx, auto, list.length, viewIdx == null, st, t.start, t.end, t.title, t.place, t.note, t.link, checksVer, list.map((x,j) => j !== idx && stateOf(x,n) === 'live' ? j : '').join(',')].join('\u0001');
     if (box.dataset.sig === sig){
       const big = box.querySelector('.big'); if (big) big.textContent = bigDur(st === 'live' ? e - n : s - n);
       const bi = box.querySelector('.bar i'); if (bi) bi.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%';
@@ -400,24 +427,57 @@ const CONFIG = {
       frag.append(c);
     }
     if (st === 'live'){ const bar = el('div','bar'); const i = el('i'); i.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%'; bar.append(i); frag.append(bar); }
-    if (t.note) frag.append(renderNote(t));
+    if (st === 'live'){
+      const others = list.map((x,j) => ({x,j})).filter(o => o.j !== idx && stateOf(o.x, n) === 'live');
+      if (others.length){
+        const p = el('p','also','同時進行：');
+        others.forEach(o => { const b = el('button','linkbtn',o.x.title); b.type = 'button'; b.onclick = () => go(o.j); p.append(b); });
+        frag.append(p);
+      }
+    }
+    if (t.link) frag.append(linkButtons(t.link));
     const nav = el('div','nav');
     const prev = el('button','btn','‹ 上一項'); prev.disabled = idx === 0; prev.onclick = () => go(idx-1);
     const home = el('button','btn','回到現在'); home.disabled = viewIdx == null || idx === auto; home.onclick = () => { viewIdx = null; renderAll(); };
     const next = el('button','btn','下一項 ›'); next.disabled = idx === list.length-1; next.onclick = () => go(idx+1);
     nav.append(prev, home, next); frag.append(nav);
+    if (t.note) frag.append(renderNote(t.note, `${t.staff}|${t.start}|${t.title}`));
     box.replaceChildren(frag);
     box.dataset.idx = idx;
     if (auto !== lastAuto){ lastAuto = auto; renderTimeline(); }
   }
 
   /* ---------- 備註：**粗體** 與 [ ] 勾選清單 ---------- */
+  // 支援 **粗體**、[文字](網址) 與直接貼上的網址
   function richText(parent, text){
-    text.split(/(\*\*[^*]+?\*\*)/).forEach(part => {
+    text.split(/(\*\*[^*]+?\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>（）「」，。、]+)/).forEach(part => {
+      if (!part) return;
+      let m;
       if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('strong', null, part.slice(2,-2)));
-      else if (part) parent.append(document.createTextNode(part));
+      else if ((m = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/))) parent.append(makeLink(m[2], m[1]));
+      else if (/^https?:\/\//.test(part)) parent.append(makeLink(part, part));
+      else parent.append(document.createTextNode(part));
     });
   }
+  function makeLink(url, text){ const a = el('a', null, text); a.href = url; a.target = '_blank'; a.rel = 'noopener'; return a; }
+  function linkLabel(url){
+    if (/facebook\.com|fb\.watch/.test(url)) return '查看臉書貼文';
+    if (/forms\.gle|docs\.google\.com\/forms/.test(url)) return '開啟報名表單';
+    if (/instagram\.com/.test(url)) return '查看 IG 貼文';
+    return '開啟連結';
+  }
+  // 「連結」欄可放多個網址；也可寫成 文字|網址
+  function linkButtons(cell){
+    const box = el('div','links');
+    cell.split(/\r?\n/).flatMap(line => /[|｜]/.test(line) ? [line] : line.split(/\s+/)).map(s => s.trim()).filter(Boolean).forEach(item => {
+      const m = item.match(/^(.*?)[|｜]\s*(https?:\/\/\S+)$/);
+      const url = m ? m[2] : item, label = m && m[1].trim() ? m[1].trim() : linkLabel(item);
+      if (!/^https?:\/\//.test(url)) return;
+      const a = makeLink(url, label); a.className = 'btn'; box.append(a);
+    });
+    return box;
+  }
+
   function checkState(key, def){
     const p = pending[key];
     if (p){
@@ -443,14 +503,13 @@ const CONFIG = {
       delete pending[key]; toast('同步失敗，請檢查網路後再試一次'); return false;
     }
   }
-  function renderNote(t){
+  function renderNote(text, taskKey){
     const box = el('div','note');
-    const taskKey = `${t.staff}|${t.start}|${t.title}`;
     let ul = null, items = [];
     const seen = {};
     const head = el('div','chk-head');
-    const updateHead = () => { const d = items.filter(x => x.checked).length; head.textContent = `確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : '（僅存在這支手機）'); };
-    t.note.split(/\r?\n/).forEach(line => {
+    const updateHead = () => { const d = items.filter(x => x.checked).length; head.textContent = `確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : ''); };
+    text.split(/\r?\n/).forEach(line => {
       const m = line.match(/^\s*(?:[-*・]\s*)?\[\s*([xXvV✓✔]?)\s*\]\s*(.*)$/);
       if (m){
         if (!ul){ ul = el('ul'); box.append(ul); }
@@ -485,9 +544,10 @@ const CONFIG = {
   }
   function askWho(then){
     const dlg = $('#whoDlg'); const list = $('#whoList'); list.replaceChildren();
+    $('#whoTitle').textContent = whoLabel ? `你的${whoLabel}是？` : '你是哪一位？';
     staff.forEach(s => {
       const b = el('button','chip'); b.type = 'button'; b.append(document.createTextNode(s.name), el('small',null,s.role));
-      b.onclick = () => { me = s.name; store.set('me', me); dlg.close(); renderMe(); renderMemo(); if (then) then(); };
+      b.onclick = () => { me = s.name; store.set('me:' + SHEET_ID, me); dlg.close(); renderMe(); renderMemo(); if (then) then(); };
       list.append(b);
     });
     dlg.querySelector('[data-close]').onclick = () => dlg.close();
@@ -495,7 +555,7 @@ const CONFIG = {
   }
   function renderMe(){ const b = $('#meBtn'); b.hidden = !staff.length; b.textContent = me ? `我是 ${me}` : '設定我是誰'; }
   // 選好「我是誰」後，自動切換到自己的流程
-  const showMine = () => { sel = me; store.set('sel', sel); viewIdx = null; lastAuto = -2; renderAll(); };
+  const showMine = () => { sel = me; store.set('sel:' + SHEET_ID, sel); viewIdx = null; lastAuto = -2; renderAll(); };
   let askedWho = false;
   function maybeAskWho(){
     if (askedWho || me || !staff.length) return;
@@ -575,7 +635,26 @@ const CONFIG = {
     });
     if (!list.length && loaded) ol.append(el('li','empty','沒有任務。'));
   }
-  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); renderMe(); renderMemo(); }
+  function renderInfo(){
+    const card = $('#infoCard'); card.hidden = !infos.length;
+    const sig = JSON.stringify(infos);
+    if (sig === infoSig) return; infoSig = sig;
+    const box = $('#info');
+    const open = new Set([...box.querySelectorAll('details[open]')].map(d => d.dataset.key));
+    box.replaceChildren();
+    let cat = null;
+    infos.forEach(it => {
+      if (it.cat !== cat){ cat = it.cat; if (cat) box.append(el('div','info-cat',cat)); }
+      const d = el('details'); d.dataset.key = `${it.cat}|${it.title}`; d.open = open.has(d.dataset.key);
+      const sum = el('summary', null, it.title);
+      const meta = [it.time, it.place].filter(Boolean).join('・'); if (meta) sum.append(el('small', null, meta));
+      const body = el('div','info-body');
+      if (it.body) body.append(renderNote(it.body, `info|${it.cat}|${it.title}`));
+      if (it.link) body.append(linkButtons(it.link));
+      d.append(sum, body); box.append(d);
+    });
+  }
+  function renderAll(){ renderClock(); renderStaff(); renderNow(); renderVenue(); renderTimeline(); renderInfo(); renderMe(); renderMemo(); }
 
   // 左右滑動切換任務
   let tx = null;
