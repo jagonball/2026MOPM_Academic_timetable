@@ -455,11 +455,18 @@ const CONFIG = {
       let m;
       if (/^\*\*[^*]+\*\*$/.test(part)) parent.append(el('strong', null, part.slice(2,-2)));
       else if ((m = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/))) parent.append(makeLink(m[2], m[1]));
-      else if (/^https?:\/\//.test(part)) parent.append(makeLink(part, part));
+      else if (/^https?:\/\//.test(part)) parent.append(makeLink(part, shortLabel(part)));
       else parent.append(document.createTextNode(part));
     });
   }
   function makeLink(url, text){ const a = el('a', null, text); a.href = url; a.target = '_blank'; a.rel = 'noopener'; return a; }
+  // 直接貼上的網址改顯示為簡短文字
+  function shortLabel(url){
+    if (/facebook\.com|fb\.watch/.test(url)) return '臉書貼文';
+    if (/forms\.gle|docs\.google\.com\/forms/.test(url)) return '報名表單';
+    if (/instagram\.com/.test(url)) return 'IG 貼文';
+    try { return new URL(url).hostname.replace(/^www\./,''); } catch(e){ return '連結'; }
+  }
   function linkLabel(url){
     if (/facebook\.com|fb\.watch/.test(url)) return '查看臉書貼文';
     if (/forms\.gle|docs\.google\.com\/forms/.test(url)) return '開啟報名表單';
