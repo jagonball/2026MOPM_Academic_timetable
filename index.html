@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14213D">
+<meta name="theme-color" content="#14213D" id="metaTheme">
 <title>會議工作流程</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +13,7 @@
   --bg:#EEF2F4; --surface:#FFFFFF; --ink:#14213D; --muted:#5B6878; --line:#D5DDE3;
   --accent:#0F7B8A; --accent-ink:#FFFFFF; --live:#F2B705; --live-ink:#14213D; --past:#9AA6B2; --danger:#B3261E;
   color-scheme:light;
+  --head-bg:var(--surface); --head-ink:var(--ink); --head-muted:var(--muted); --head-line:var(--line);
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
@@ -32,16 +33,16 @@
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--head-bg)}
 .num{font-family:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;font-variant-numeric:tabular-nums}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--head-bg);color:var(--head-ink);border-bottom:1px solid var(--head-line)}
 .top-row{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px 6px}
 .event{flex:1;min-width:0;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .clock{font-size:26px;font-weight:600;letter-spacing:.02em;line-height:1;background:none;border:0;padding:4px 0}
-.clock.sim{color:var(--accent)}
+.clock.sim{color:var(--head-ink)}
 .sim-badge{font-size:12px;font-weight:700;background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:2px 6px;display:none}
 .clock.sim + .sim-badge{display:inline-block}
 .staff{max-width:640px;margin:0 auto;display:flex;gap:8px;overflow-x:auto;padding:4px 16px 12px;scrollbar-width:none}
@@ -50,6 +51,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .chip small{display:block;font-size:11px;color:var(--muted)}
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .chip[aria-pressed="true"] small{color:var(--bg);opacity:.75}
+.top .chip{border-color:var(--head-line)}
+.top .chip small{color:var(--head-muted)}
+.top .chip[aria-pressed="true"]{background:var(--head-ink);border-color:var(--head-ink);color:var(--head-bg)}
+.top .chip[aria-pressed="true"] small{color:var(--head-bg)}
 
 main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .card{background:var(--surface);border-radius:14px;padding:20px;margin-bottom:16px;border:1px solid var(--line)}
@@ -122,8 +127,9 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
 
-.sub{font-size:12px;color:var(--muted);font-weight:400;display:flex;gap:8px;align-items:center}
+.sub{font-size:12px;color:var(--head-muted);font-weight:400;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center}
 .linkbtn{background:none;border:0;padding:0;color:var(--accent);font-size:12px;font-weight:700}
+.top .linkbtn{color:var(--head-ink);text-decoration:underline;text-underline-offset:2px}
 .titles{flex:1;min-width:0}
 .warn{background:var(--live);color:var(--live-ink);border-radius:8px;padding:8px 12px;font-size:14px;margin-bottom:16px}
 .setup p{font-size:15px}
@@ -150,7 +156,7 @@ a.btn{text-decoration:none;display:inline-block}
   <div class="top-row">
     <div class="titles">
       <div class="event" id="eventName">會議工作流程</div>
-      <div class="sub"><span id="syncState">尚未讀取</span><button class="linkbtn" id="refreshBtn" type="button">更新</button><button class="linkbtn" id="meBtn" type="button" hidden></button></div>
+      <div class="sub"><span id="syncState">尚未讀取</span><button class="linkbtn" id="refreshBtn" type="button">更新</button><button class="linkbtn" id="meBtn" type="button" hidden></button><button class="linkbtn" id="themeBtn" type="button">外觀：自動</button></div>
     </div>
     <button class="clock num" id="clock" type="button" title="設定模擬時間">--:--:--</button>
     <span class="sim-badge">模擬</span>
@@ -235,6 +241,65 @@ const CONFIG = {
   };
   const params = new URLSearchParams(location.search);
   const SHEET_ID = (CONFIG.SHEET_ID || params.get('sheet') || '').trim();
+
+  /* ---------- 外觀：自動／淺色／深色（記在這支手機） ---------- */
+  const THEMES = ['auto','light','dark'], THEME_NAMES = { auto: '自動', light: '淺色', dark: '深色' };
+  let theme = THEMES.includes(store.get('theme')) ? store.get('theme') : 'auto';
+  function applyTheme(){
+    if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', theme);
+    const b = document.getElementById('themeBtn');
+    b.textContent = `外觀：${THEME_NAMES[theme]}`;
+    b.setAttribute('aria-label', `外觀目前是${THEME_NAMES[theme]}，點一下切換`);
+    updateMetaTheme();
+  }
+  document.getElementById('themeBtn').onclick = () => {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    store.set('theme', theme === 'auto' ? null : theme); applyTheme();
+  };
+  function updateMetaTheme(){
+    const c = getComputedStyle(document.querySelector('.top')).backgroundColor;
+    if (c && !/transparent|rgba\(0, 0, 0, 0\)/.test(c)) document.getElementById('metaTheme').setAttribute('content', c);
+  }
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateMetaTheme); } catch(e){}
+
+  /* ---------- 試算表自訂色碼 ---------- */
+  const BASE = { light: { bg: [238,242,244], surface: [255,255,255] }, dark: { bg: [14,22,32], surface: [23,34,49] } };
+  const DARK_INK = [20,33,61], WHITE = [255,255,255];
+  function parseHex(s){
+    const m = String(s || '').trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i); if (!m) return null;
+    let c = m[1]; if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    return [0,2,4].map(i => parseInt(c.slice(i, i+2), 16));
+  }
+  const toHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2,'0')).join('');
+  const lum = a => { const f = v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }; return .2126*f(a[0]) + .7152*f(a[1]) + .0722*f(a[2]); };
+  const contrast = (a,b) => { const x = lum(a), y = lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+  const mix = (a,b,t) => a.map((v,i) => v + (b[i]-v)*t);
+  // 顏色太接近背景時自動調深或調淺，確保看得清楚
+  function fit(c, bg, min){ const target = lum(bg) > .4 ? [0,0,0] : WHITE; let t = 0, out = c; while (contrast(out, bg) < min && t < 1){ t += .05; out = mix(c, target, t); } return out; }
+  const inkOn = c => contrast(WHITE, c) >= contrast(DARK_INK, c) ? WHITE : DARK_INK;
+  function applyColors(settings){
+    const get = name => { const r = settings.find(x => String(x['項目'] || '').replace(/\s/g,'').replace(/\(/g,'（').replace(/\)/g,'）') === name); return r ? parseHex(r['內容']) : null; };
+    const accent = get('強調色'), accentD = get('強調色（深色模式）') || accent;
+    const live = get('標示色'), liveD = get('標示色（深色模式）') || live;
+    const head = get('頁首色'), headD = get('頁首色（深色模式）') || head;
+    const vars = mode => {
+      const B = BASE[mode], a = mode === 'light' ? accent : accentD, l = mode === 'light' ? live : liveD, hd = mode === 'light' ? head : headD;
+      const out = [];
+      if (a){ const c = fit(a, B.bg, 3); out.push(`--accent:${toHex(c)}`, `--accent-ink:${toHex(inkOn(c))}`); }
+      if (l) out.push(`--live:${toHex(l)}`, `--live-ink:${toHex(inkOn(l))}`);
+      if (hd){ const ink = inkOn(hd); out.push(`--head-bg:${toHex(hd)}`, `--head-ink:${toHex(ink)}`, `--head-muted:${toHex(mix(ink, hd, .3))}`, `--head-line:${toHex(mix(ink, hd, .75))}`); }
+      return out.join(';');
+    };
+    const L = vars('light'), D = vars('dark');
+    let css = '';
+    if (L) css += `:root{${L}}`;
+    if (D) css += `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${D}}}:root[data-theme="dark"]{${D}}`;
+    let tag = document.getElementById('customColors');
+    if (!tag){ tag = document.createElement('style'); tag.id = 'customColors'; document.head.append(tag); }
+    if (tag.textContent !== css){ tag.textContent = css; updateMetaTheme(); }
+  }
+  applyTheme();
 
   let staff = [], tasks = [], sessions = [], eventName = CONFIG.EVENT_NAME;
   let apiUrl = '', checks = {}, checksVer = 0, pending = {};
@@ -322,6 +387,7 @@ const CONFIG = {
     const next = {};
     (raw.checks || []).forEach(r => { if (r['鍵值']) next[r['鍵值']] = { done: r['已完成'] === '是', by: r['勾選者'] || '', at: r['時間'] || '' }; });
     if (JSON.stringify(next) !== JSON.stringify(checks)){ checks = next; checksVer++; }
+    applyColors(settings);
     const labelRow = settings.find(r => r['項目'] === '身份稱呼');
     whoLabel = (labelRow && labelRow['內容']) || '';
     staff = (raw.staff || []).filter(r => r['姓名'] || r['身份']).map(r => ({ name: r['姓名'] || r['身份'], role: r['組別'] || r['說明'] || '' }));
