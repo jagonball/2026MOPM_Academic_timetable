@@ -1,2 +1,2 @@
-# 2026MOPM_Academic_timetable
-Timetable for Academic Group
+# 2026_Academic_timetable_APP
+Instant timetable for Academic Group
