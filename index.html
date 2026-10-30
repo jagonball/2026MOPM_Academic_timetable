@@ -186,7 +186,10 @@ main{padding-bottom:96px}
 .todo .done .t{color:var(--muted)}
 .todo small{display:block;font-size:12px;color:var(--muted)}
 .todo .from{background:none;border:0;padding:0;font-size:12px;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
-.todo .rm{background:none;border:0;color:var(--muted);font-size:13px;padding:0 2px;flex:none}
+.todo .rm{background:none;border:0;color:var(--muted);font-size:13px;padding:2px}
+.todo .side{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px}
+.todo .t{cursor:pointer;-webkit-user-select:none;user-select:none}
+.todo li.dragging{background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.22);border-radius:8px;position:relative;z-index:2;padding-left:6px;padding-right:6px}
 </style>
 </head>
 <body>
@@ -891,7 +894,7 @@ const CONFIG = {
         const bh = el('div','blk-head');
         const title = el('div','blk-title'); richText(title, b.title);
         const handle = el('button','blk-handle','⠿'); handle.type = 'button';
-        handle.setAttribute('aria-label', `拖拉調整「${plainOf(b.title)}」的順序（也可用上下方向鍵）`);
+        handle.setAttribute('aria-label', `拖拉調整「${plainOf(b.title)}」的順序`);
         bh.append(title, handle);
         const body = el('div','blk-body'); renderLines(b.lines, body);
         blk.append(bh, body); wrap.append(blk);
@@ -912,9 +915,9 @@ const CONFIG = {
     return box;
   }
 
-  function makeSortable(wrap, onChange){
+  function makeSortable(wrap, onChange, itemSel = '.blk'){
     wrap.querySelectorAll('.blk-handle').forEach(handle => {
-      const blk = handle.closest('.blk');
+      const blk = handle.closest(itemSel);
       handle.addEventListener('pointerdown', e => {
         if (e.button !== undefined && e.button !== 0) return;
         e.preventDefault(); e.stopPropagation();
@@ -923,7 +926,10 @@ const CONFIG = {
         let moved = false;
         const move = ev => {
           moved = true;
-          if (ev.clientY < 70) window.scrollBy(0, -12); else if (ev.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+          if (wrap.scrollHeight > wrap.clientHeight + 2){   // 清單本身可捲動時（例如待完成事項），捲動清單
+            const r = wrap.getBoundingClientRect();
+            if (ev.clientY < r.top + 40) wrap.scrollTop -= 10; else if (ev.clientY > r.bottom - 40) wrap.scrollTop += 10;
+          } else if (ev.clientY < 70) window.scrollBy(0, -12); else if (ev.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
           let before = null;
           for (const s of wrap.children){ if (s === blk) continue; const r = s.getBoundingClientRect(); if (ev.clientY < r.top + r.height/2){ before = s; break; } }
           if (before !== blk.nextElementSibling && before !== blk) wrap.insertBefore(blk, before);
@@ -935,10 +941,6 @@ const CONFIG = {
         handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', up);
       });
       handle.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
-      handle.addEventListener('keydown', e => {
-        if (e.key === 'ArrowUp' && blk.previousElementSibling){ e.preventDefault(); wrap.insertBefore(blk, blk.previousElementSibling); handle.focus(); onChange(); }
-        if (e.key === 'ArrowDown' && blk.nextElementSibling){ e.preventDefault(); wrap.insertBefore(blk.nextElementSibling, blk); handle.focus(); onChange(); }
-      });
     });
   }
   function askWho(then){
@@ -1063,11 +1065,15 @@ const CONFIG = {
   }
   function fillTodo(){
     const ul = $('#todoList'); ul.replaceChildren();
-    const rows = allTodo().map(e => ({ e, s: todoState(e) })).sort((a,b) => (a.s.done ? 1 : 0) - (b.s.done ? 1 : 0));
+    let saved = []; try { saved = JSON.parse(store.get(todoOrderKey()) || '[]'); } catch(e){}
+    const list = allTodo();
+    const ordered = saved.map(k => list.find(e => e.key === k)).filter(Boolean).concat(list.filter(e => !saved.includes(e.key)));
+    const rows = ordered.map(e => ({ e, s: todoState(e) }));
     const left = rows.filter(r => !r.s.done && !r.s.missing).length;
     $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在清單或「-」條列項目上長按，就能加進來。';
+    setTimeout(() => makeSortable(ul, saveTodoOrder, 'li'));
     rows.forEach(({ e, s }) => {
-      const li = el('li', s.done ? 'done' : '');
+      const li = el('li', s.done ? 'done' : ''); li.dataset.key = e.key;
       const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!s.done; cb.disabled = !!s.missing; cb.setAttribute('aria-label', e.text);
       cb.onchange = async () => {
         if (e.kind === 'memo'){ const i = findMemoItem(e.text); if (i >= 0) setMemoCheck(i, cb.checked); }
@@ -1082,6 +1088,12 @@ const CONFIG = {
       const t = el('div','t' + (s.struck ? ' struck' : ''));
       if (e.kind === 'must') t.append(el('span','tag','必看'));
       t.append(document.createTextNode(e.text + (s.missing ? '（已從筆記刪除）' : '')));
+      // 點文字：加上或取消刪除線（與原本位置同步）
+      if (!s.missing){
+        t.tabIndex = 0; t.setAttribute('role','button'); t.setAttribute('aria-label', `${e.text}，點一下${s.struck ? '取消' : '加上'}刪除線`);
+        const strike = () => { toggleTodoStrike(e); bump(); };
+        t.onclick = strike; t.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); strike(); } };
+      }
       body.append(t);
       if (e.meta){
         const b = el('button','from', e.from); b.type = 'button';
@@ -1101,8 +1113,29 @@ const CONFIG = {
       } else if (e.from) body.append(el('small', null, e.from));
       const rm = el('button','rm','移除'); rm.type = 'button';
       rm.onclick = () => { if (e.kind === 'must') toggleDis(e.key); else { setImp(getImp().filter(x => x.key !== e.key)); bump(); } };
-      li.append(cb, body, rm); ul.append(li);
+      const handle = el('button','blk-handle','⠿'); handle.type = 'button';
+      handle.setAttribute('aria-label', `拖拉調整「${e.text}」的順序`);
+      const side = el('div','side'); side.append(handle, rm);
+      li.append(cb, body, side); ul.append(li);
     });
+  }
+  const todoOrderKey = () => `todoorder:${SRC}:${me || ''}`;
+  function saveTodoOrder(){
+    const keys = [...$('#todoList').children].map(li => li.dataset.key).filter(Boolean);
+    store.set(todoOrderKey(), JSON.stringify(keys));
+  }
+  function toggleTodoStrike(e){
+    if (e.kind === 'memo' || e.kind === 'memobul'){
+      const lines = memoLines();
+      const i = e.kind === 'memo' ? findMemoItem(e.text) : lines.findIndex(l => { const m = !l.match(ITEM_RE) && l.match(BUL_RE); return m && plainOf(m[1]) === e.text; });
+      if (i < 0) return;
+      if (e.kind === 'memo'){ const m = lines[i].match(ITEM_RE); const t = m[3].trim(); lines[i] = `${m[1]}[${m[2] ? 'x' : ' '}] ${/^~~.*~~$/.test(t) ? t.slice(2,-2) : `~~${t}~~`}`; }
+      else { const m = lines[i].match(/^(\s*-\s+)(.+)$/); const t = m[2].trim(); lines[i] = m[1] + (/^~~.*~~$/.test(t) ? t.slice(2,-2) : `~~${t}~~`); }
+      writeMemoLines(lines);
+    } else {
+      const on = store.get('strike:' + e.key) !== '1';
+      store.set('strike:' + e.key, on ? '1' : null);
+    }
   }
   $('#todoFab').onclick = () => { fillTodo(); $('#todoDlg').showModal(); };
   $('#todoDlg').querySelector('[data-close]').onclick = () => $('#todoDlg').close();
