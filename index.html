@@ -42,8 +42,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .top-row{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px 6px}
 .event{flex:1;min-width:0;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .clock{font-size:26px;font-weight:600;letter-spacing:.02em;line-height:1;background:none;border:0;padding:4px 0}
-.clock.sim{color:var(--head-ink)}
-.sim-badge{font-size:12px;font-weight:700;background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:2px 6px;display:none}
+:root{--sim:#C2185B;--sim-ink:#FFFFFF}
+.clock.sim{background:var(--sim);color:var(--sim-ink);border-radius:8px;padding:4px 8px}
+.sim-badge{font-size:12px;font-weight:700;background:var(--sim);color:var(--sim-ink);border-radius:4px;padding:2px 6px;display:none}
+.top.simulating{border-bottom:3px solid var(--sim)}
 .clock.sim + .sim-badge{display:inline-block}
 .staff{max-width:640px;margin:0 auto;display:flex;gap:8px;overflow-x:auto;padding:4px 16px 12px;scrollbar-width:none}
 .staff::-webkit-scrollbar{display:none}
@@ -85,6 +87,12 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .note li .txt.struck,.todo .struck{text-decoration:line-through}
 .note li.imp .txt::before{content:"★ ";color:var(--accent)}
 .note .chk-head small{font-size:12px}
+.blk{border-top:1px solid var(--line);margin-top:8px;padding-top:6px}
+.blk-head{display:flex;align-items:center;gap:6px}
+.blk-title{flex:1;min-width:0;font-weight:700;font-size:15px}
+.blk-handle{flex:none;border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:6px 8px;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.blk.dragging{background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.22);border-radius:8px;position:relative;z-index:2;padding:6px 8px}
+.blk-reset{background:none;border:0;padding:8px 0 0;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:2px}
 .note li input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent)}
 .note li.done .txt{color:var(--muted)}
 .nav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin-top:18px}
@@ -577,6 +585,7 @@ const CONFIG = {
     const d = new Date(now());
     const c = $('#clock'); c.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     c.classList.toggle('sim', simOffset !== 0);
+    document.querySelector('.top').classList.toggle('simulating', simOffset !== 0);
   }
   function renderStaff(){
     const nav = $('#staff'); nav.replaceChildren();
@@ -738,49 +747,127 @@ const CONFIG = {
 
   function renderNote(text, taskKey, from, meta){
     const box = el('div','note');
-    let ul = null, items = [];
+    let items = [];
     const seen = {};
     const head = el('div','chk-head');
     const updateHead = () => { const d = items.filter(x => x.checked).length; head.replaceChildren(document.createTextNode(`確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : '')), el('small', null, '・點文字加刪除線，長按加入待完成')); };
-    text.split(/\r?\n/).forEach(line => {
-      const m = line.match(ITEM_RE);
-      if (m){
-        if (!ul){ ul = el('ul'); box.append(ul); }
-        const text = m[3].trim(); seen[text] = (seen[text] || 0) + 1;
-        const key = apiUrl ? `${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}` : `chk:${SRC}:${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}`;
-        const def = !!m[2];
-        const st = checkState(key, def);
-        const li = el('li'); const lab = el('label'); const cb = el('input');
-        cb.type = 'checkbox'; cb.checked = st.done; cb.setAttribute('aria-label', plainOf(text));
-        const span = el('span','txt'); richText(span, text);
-        span.classList.toggle('struck', store.get('strike:' + key) === '1');
-        const who = el('small'); who.style.cssText = 'display:block;font-size:12px;color:var(--muted);text-decoration:none';
-        const setWho = s => { who.textContent = (s.done && s.by) ? `${s.by} 完成${s.at ? '・' + String(s.at).slice(-5) : ''}` : ''; };
-        setWho(st);
-        li.classList.toggle('done', cb.checked);
-        li.classList.toggle('imp', isImp(key));
-        cb.onchange = async () => {
-          const done = cb.checked;
-          if (apiUrl && !me){ cb.checked = !done; askWho(() => { cb.checked = done; cb.onchange(); }); return; }
-          li.classList.toggle('done', done); updateHead(); setWho(done ? { done, by: me, at: '' } : { done });
-          cb.disabled = true;
-          const ok = await toggleCheck(key, done);
-          cb.disabled = false;
-          if (!ok){ cb.checked = !done; li.classList.toggle('done', !done); updateHead(); setWho(checkState(key, def)); }
-          renderTodo();
-        };
-        const item = el('span','item'); item.append(span, who);
-        pressable(item,
-          () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); renderTodo(); },
-          () => toggleImp({ key, kind: 'task', text: plainOf(text), from: from || '', def, meta: meta || null }));
-        lab.append(cb); li.append(lab, item); ul.append(li); items.push(cb);
-      } else {
-        ul = null;
-        const p = el('p'); richText(p, line); box.append(p);
-      }
+    // 把一段文字（多行）畫進 container
+    const renderLines = (lines, container) => {
+      let ul = null;
+      lines.forEach(line => {
+        const m = line.match(ITEM_RE);
+        if (m){
+          if (!ul){ ul = el('ul'); container.append(ul); }
+          const text = m[3].trim(); seen[text] = (seen[text] || 0) + 1;
+          const key = apiUrl ? `${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}` : `chk:${SRC}:${taskKey}|${text}${seen[text] > 1 ? '#' + seen[text] : ''}`;
+          const def = !!m[2];
+          const st = checkState(key, def);
+          const li = el('li'); const lab = el('label'); const cb = el('input');
+          cb.type = 'checkbox'; cb.checked = st.done; cb.setAttribute('aria-label', plainOf(text));
+          const span = el('span','txt'); richText(span, text);
+          span.classList.toggle('struck', store.get('strike:' + key) === '1');
+          const who = el('small'); who.style.cssText = 'display:block;font-size:12px;color:var(--muted);text-decoration:none';
+          const setWho = s => { who.textContent = (s.done && s.by) ? `${s.by} 完成${s.at ? '・' + String(s.at).slice(-5) : ''}` : ''; };
+          setWho(st);
+          li.classList.toggle('done', cb.checked);
+          li.classList.toggle('imp', isImp(key));
+          cb.onchange = async () => {
+            const done = cb.checked;
+            if (apiUrl && !me){ cb.checked = !done; askWho(() => { cb.checked = done; cb.onchange(); }); return; }
+            li.classList.toggle('done', done); updateHead(); setWho(done ? { done, by: me, at: '' } : { done });
+            cb.disabled = true;
+            const ok = await toggleCheck(key, done);
+            cb.disabled = false;
+            if (!ok){ cb.checked = !done; li.classList.toggle('done', !done); updateHead(); setWho(checkState(key, def)); }
+            renderTodo();
+          };
+          const item = el('span','item'); item.append(span, who);
+          pressable(item,
+            () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); renderTodo(); },
+            () => toggleImp({ key, kind: 'task', text: plainOf(text), from: from || '', def, meta: meta || null }));
+          lab.append(cb); li.append(lab, item); ul.append(li); items.push(cb);
+        } else {
+          ul = null;
+          const p = el('p'); richText(p, line); container.append(p);
+        }
+      });
+    };
+
+    // 「## 標題」開始一個區塊；區塊可以拖拉排序（順序存在這支手機）
+    const all = text.split(/\r?\n/);
+    const pre = [], blocks = [];
+    all.forEach(line => {
+      const hm = line.match(/^\s*##\s*(.+)$/);
+      if (hm){ blocks.push({ title: hm[1].trim(), lines: [] }); }
+      else if (blocks.length) blocks[blocks.length-1].lines.push(line);
+      else pre.push(line);
     });
+    const tseen = {};
+    blocks.forEach(b => { const t = plainOf(b.title); tseen[t] = (tseen[t] || 0) + 1; b.id = t + (tseen[t] > 1 ? '#' + tseen[t] : ''); });
+    // 區塊之間的空白行不顯示
+    blocks.forEach(b => { while (b.lines.length && !b.lines[b.lines.length-1].trim()) b.lines.pop(); });
+    while (pre.length && !pre[pre.length-1].trim()) pre.pop();
+
+    renderLines(pre, box);
+    if (blocks.length){
+      const orderKey = `order:${SRC}:${taskKey}`;
+      let saved = []; try { saved = JSON.parse(store.get(orderKey) || '[]'); } catch(e){}
+      const ordered = saved.map(id => blocks.find(b => b.id === id)).filter(Boolean).concat(blocks.filter(b => !saved.includes(b.id)));
+      const wrap = el('div','blocks');
+      ordered.forEach(b => {
+        const blk = el('div','blk'); blk.dataset.id = b.id;
+        const bh = el('div','blk-head');
+        const title = el('div','blk-title'); richText(title, b.title);
+        const handle = el('button','blk-handle','⠿'); handle.type = 'button';
+        handle.setAttribute('aria-label', `拖拉調整「${plainOf(b.title)}」的順序（也可用上下方向鍵）`);
+        bh.append(title, handle);
+        const body = el('div','blk-body'); renderLines(b.lines, body);
+        blk.append(bh, body); wrap.append(blk);
+      });
+      const save = () => {
+        const ids = [...wrap.children].map(x => x.dataset.id);
+        const isDefault = ids.every((id,i) => id === blocks[i].id);
+        store.set(orderKey, isDefault ? null : JSON.stringify(ids));
+        reset.hidden = isDefault;
+      };
+      const reset = el('button','blk-reset','恢復原始順序'); reset.type = 'button';
+      reset.hidden = !saved.length;
+      reset.onclick = () => { const kids = [...wrap.children]; blocks.forEach(b => { const n = kids.find(x => x.dataset.id === b.id); if (n) wrap.append(n); }); save(); };
+      makeSortable(wrap, save);
+      box.append(wrap, reset);
+    }
     if (items.length){ updateHead(); box.prepend(head); }
     return box;
+  }
+
+  function makeSortable(wrap, onChange){
+    wrap.querySelectorAll('.blk-handle').forEach(handle => {
+      const blk = handle.closest('.blk');
+      handle.addEventListener('pointerdown', e => {
+        if (e.button !== undefined && e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation();
+        try { handle.setPointerCapture(e.pointerId); } catch(_){}
+        blk.classList.add('dragging');
+        let moved = false;
+        const move = ev => {
+          moved = true;
+          if (ev.clientY < 70) window.scrollBy(0, -12); else if (ev.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+          let before = null;
+          for (const s of wrap.children){ if (s === blk) continue; const r = s.getBoundingClientRect(); if (ev.clientY < r.top + r.height/2){ before = s; break; } }
+          if (before !== blk.nextElementSibling && before !== blk) wrap.insertBefore(blk, before);
+        };
+        const up = () => {
+          handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); handle.removeEventListener('pointercancel', up);
+          blk.classList.remove('dragging'); if (moved) onChange();
+        };
+        handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', up);
+      });
+      handle.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+      handle.addEventListener('keydown', e => {
+        if (e.key === 'ArrowUp' && blk.previousElementSibling){ e.preventDefault(); wrap.insertBefore(blk, blk.previousElementSibling); handle.focus(); onChange(); }
+        if (e.key === 'ArrowDown' && blk.nextElementSibling){ e.preventDefault(); wrap.insertBefore(blk.nextElementSibling, blk); handle.focus(); onChange(); }
+      });
+    });
   }
   function askWho(then){
     const dlg = $('#whoDlg'); const list = $('#whoList'); list.replaceChildren();
