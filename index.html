@@ -932,13 +932,13 @@ const CONFIG = {
           } else if (ev.clientY < 70) window.scrollBy(0, -12); else if (ev.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
           let before = null;
           for (const s of wrap.children){ if (s === blk) continue; const r = s.getBoundingClientRect(); if (ev.clientY < r.top + r.height/2){ before = s; break; } }
-          if (before !== blk.nextElementSibling && before !== blk) wrap.insertBefore(blk, before);
+          if (before !== blk.nextElementSibling && before !== blk){ wrap.insertBefore(blk, before); onChange(); }   // 每次換位置就立即儲存
         };
         const up = () => {
-          handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); handle.removeEventListener('pointercancel', up);
+          window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
           blk.classList.remove('dragging'); if (moved) onChange();
         };
-        handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', up);
+        window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
       });
       handle.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
     });
