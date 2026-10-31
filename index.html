@@ -670,7 +670,7 @@ const CONFIG = {
         nb.hidden = folded; tog.setAttribute('aria-expanded', String(!folded));
         tog.replaceChildren(document.createTextNode(folded ? '▸ 顯示備註' : '▾ 收合備註'));
         if (folded){   // 收合時提示清單進度與未完成的必看重點
-          const boxes = [...nb.querySelectorAll('ul:not(.bul) li input')];
+          const boxes = [...nb.querySelectorAll('ul:not(.bul) li')].filter(li => !li.querySelector('.txt.struck')).map(li => li.querySelector('input')).filter(Boolean);
           const must = [...nb.querySelectorAll('.must input')].filter(x => !x.checked).length;
           const hint = [boxes.length ? `清單 ${boxes.filter(x => x.checked).length}/${boxes.length}` : '', must ? `★ 必看 ${must}` : ''].filter(Boolean).join('・');
           if (hint) tog.append(el('small', null, hint));
@@ -829,9 +829,15 @@ const CONFIG = {
     let items = [];
     const seen = {};
     const head = el('div','chk-head');
-    const updateHead = () => { const d = items.filter(x => x.checked).length; head.replaceChildren(document.createTextNode(`確認清單 ${d} / ${items.length}` + (apiUrl ? '（所有人同步）' : '')), el('small', null, '・點文字加刪除線，長按加入待完成')); };
+    // 加了刪除線的項目視為「不需要」，不列入確認清單統計
+    const updateHead = () => {
+      const active = items.filter(x => !x.span.classList.contains('struck'));
+      const d = active.filter(x => x.cb.checked).length, skip = items.length - active.length;
+      head.replaceChildren(document.createTextNode(`確認清單 ${d} / ${active.length}` + (apiUrl ? '（所有人同步）' : '')),
+        el('small', null, (skip ? `・略過 ${skip} 項` : '') + '・點文字加刪除線，長按加入待完成'));
+    };
     const mseen = {}, bseen = {};
-    const strikeToggle = (span, key) => () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); renderTodo(); };
+    const strikeToggle = (span, key) => () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); updateHead(); renderTodo(); };
     // [!] 必看重點：醒目顯示，自動列入待完成事項
     const mustRow = raw => {
       mseen[raw] = (mseen[raw] || 0) + 1; const key = mustKey(taskKey, raw, mseen[raw]);
@@ -894,9 +900,9 @@ const CONFIG = {
           };
           const item = el('span','item'); item.append(span, who);
           pressable(item,
-            () => { const on = !span.classList.contains('struck'); span.classList.toggle('struck', on); store.set('strike:' + key, on ? '1' : null); renderTodo(); },
+            strikeToggle(span, key),
             () => toggleImp({ key, kind: 'task', text: plainOf(text), raw: text, from: from || '', def, meta: meta || null }));
-          lab.append(cb); li.append(lab, item); ul.append(li); items.push(cb);
+          lab.append(cb); li.append(lab, item); ul.append(li); items.push({ cb, span });
         } else {
           ul = null; bl = null;
           const p = el('p'); richText(p, line); container.append(p);
@@ -1089,7 +1095,7 @@ const CONFIG = {
   function renderTodo(){
     const fab = $('#todoFab'); const list = allTodo();
     if (!SRC || EXPORT || !list.length){ fab.hidden = true; if ($('#todoDlg').open) fillTodo(); return; }
-    const left = list.map(todoState).filter(s => !s.done && !s.missing).length;
+    const left = list.map(todoState).filter(s => !s.done && !s.missing && !s.struck).length;   // 加了刪除線的不算未完成
     fab.hidden = false; fab.textContent = left ? `★ 待完成 ${left}` : '★ 待完成 ✓';
     if ($('#todoDlg').open) fillTodo();
   }
@@ -1113,8 +1119,9 @@ const CONFIG = {
     const list = allTodo();
     const ordered = saved.map(k => list.find(e => e.key === k)).filter(Boolean).concat(list.filter(e => !saved.includes(e.key)));
     const rows = ordered.map(e => ({ e, s: todoState(e) }));
-    const left = rows.filter(r => !r.s.done && !r.s.missing).length;
-    $('#todoSummary').textContent = rows.length ? (left ? `還有 ${left} 項未完成。` : '全部完成了！') : '還沒有待完成事項。在清單或「-」條列項目上長按，就能加進來。';
+    const left = rows.filter(r => !r.s.done && !r.s.missing && !r.s.struck).length;
+    const skip = rows.filter(r => r.s.struck && !r.s.missing).length;
+    $('#todoSummary').textContent = rows.length ? ((left ? `還有 ${left} 項未完成。` : '全部完成了！') + (skip ? `（略過 ${skip} 項加了刪除線的項目）` : '')) : '還沒有待完成事項。在清單或「-」條列項目上長按，就能加進來。';
     setTimeout(() => makeSortable(ul, saveTodoOrder, 'li'));
     rows.forEach(({ e, s }) => {
       const li = el('li', s.done ? 'done' : ''); li.dataset.key = e.key;
