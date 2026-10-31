@@ -99,7 +99,10 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .todo .tag{display:inline-block;font-size:11px;font-weight:700;color:var(--accent-ink);background:var(--accent);border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px}
 .blk{border-top:1px solid var(--line);margin-top:8px;padding-top:6px}
 .blk-head{display:flex;align-items:center;gap:6px}
-.blk-title{flex:1;min-width:0;font-weight:700;font-size:15px}
+.blk-title{flex:1;min-width:0;font-weight:700;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.blk-title .chev{display:inline-block;width:1.1em;color:var(--muted);font-weight:400}
+.note-toggle{display:block;background:none;border:0;padding:14px 0 0;color:var(--accent);font-weight:700;font-size:14px;text-align:left}
+.note-toggle small{font-weight:400;color:var(--muted);margin-left:6px}
 .blk-handle{flex:none;border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:6px 8px;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
 .blk.dragging{background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.22);border-radius:8px;position:relative;z-index:2;padding:6px 8px}
 .blk-reset{background:none;border:0;padding:8px 0 0;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:2px}
@@ -377,6 +380,7 @@ const CONFIG = {
     L.venueNow = (!L.venueHidden && v) || '會場現在';
     L.venueOther = setting(settings, '其他時段標題') || '這段時間的議程';
     L.word = setting(settings, '議程稱呼') || '議程';
+    L.noteFolded = /收合|折疊|隱藏/.test(setting(settings, '備註預設'));
     const ver = setting(settings, '資料版本'), showVer = /^(是|顯示|開|開啟|yes|on|true)$/i.test(setting(settings, '顯示資料版本'));
     const vEl = document.getElementById('verState'); vEl.textContent = ver ? `資料版本 ${ver}` : ''; vEl.hidden = !(showVer && ver);
     document.getElementById('infoTitle').textContent = setting(settings, '活動資訊標題') || '活動資訊';
@@ -419,7 +423,7 @@ const CONFIG = {
   let sel = params.get('who') || store.get('sel:' + SRC) || store.get('sel');
   let viewIdx = null, lastAuto = -2;
   let simOffset = Number(store.get('sim')) || 0, simAllowed = true;
-  let L = { venueNow: '會場現在', venueOther: '這段時間的議程', venueHidden: false, word: '議程' };
+  let L = { venueNow: '會場現在', venueOther: '這段時間的議程', venueHidden: false, word: '議程', noteFolded: false };
 
   const now = () => Date.now() + simOffset;
   const pad = n => String(n).padStart(2,'0');
@@ -656,7 +660,25 @@ const CONFIG = {
     const home = el('button','btn','回到現在'); home.disabled = viewIdx == null || idx === auto; home.onclick = () => { viewIdx = null; renderAll(); };
     const next = el('button','btn','下一項 ›'); next.disabled = idx === list.length-1; next.onclick = () => go(idx+1);
     nav.append(prev, home, next); frag.append(nav);
-    if (t.note) frag.append(renderNote(t.note, `${t.staff}|${t.start}|${t.title}`, t.title, { staff: t.staff, start: t.start, title: t.title }));
+    if (t.note){
+      // 備註可以整段收合（每個流程項目各自記住）
+      const tk = `${t.staff}|${t.start}|${t.title}`, fk = `notefold:${SRC}:${tk}`;
+      const nb = renderNote(t.note, tk, t.title, { staff: t.staff, start: t.start, title: t.title });
+      const saved = store.get(fk); let folded = saved == null ? L.noteFolded : saved === '1';
+      const tog = el('button','note-toggle'); tog.type = 'button';
+      const paint = () => {
+        nb.hidden = folded; tog.setAttribute('aria-expanded', String(!folded));
+        tog.replaceChildren(document.createTextNode(folded ? '▸ 顯示備註' : '▾ 收合備註'));
+        if (folded){   // 收合時提示清單進度與未完成的必看重點
+          const boxes = [...nb.querySelectorAll('ul:not(.bul) li input')];
+          const must = [...nb.querySelectorAll('.must input')].filter(x => !x.checked).length;
+          const hint = [boxes.length ? `清單 ${boxes.filter(x => x.checked).length}/${boxes.length}` : '', must ? `★ 必看 ${must}` : ''].filter(Boolean).join('・');
+          if (hint) tog.append(el('small', null, hint));
+        }
+      };
+      tog.onclick = () => { folded = !folded; store.set(fk, folded ? '1' : '0'); paint(); };
+      paint(); frag.append(tog, nb);
+    }
     box.replaceChildren(frag);
     box.dataset.idx = idx;
     if (auto !== lastAuto){ lastAuto = auto; renderTimeline(); }
@@ -906,11 +928,19 @@ const CONFIG = {
       ordered.forEach(b => {
         const blk = el('div','blk'); blk.dataset.id = b.id;
         const bh = el('div','blk-head');
-        const title = el('div','blk-title'); richText(title, b.title);
+        const title = el('div','blk-title'); const chev = el('span','chev'); title.append(chev); richText(title, b.title);
         const handle = el('button','blk-handle','⠿'); handle.type = 'button';
         handle.setAttribute('aria-label', `拖拉調整「${plainOf(b.title)}」的順序`);
         bh.append(title, handle);
         const body = el('div','blk-body'); renderLines(b.lines, body);
+        // 點區塊標題可以收合／展開這個區塊
+        const bk = `blkfold:${SRC}:${taskKey}|${b.id}`;
+        const setFold = f => { body.hidden = f; chev.textContent = f ? '▸' : '▾'; title.setAttribute('aria-expanded', String(!f)); };
+        setFold(store.get(bk) === '1');
+        title.tabIndex = 0; title.setAttribute('role','button');
+        const flip = () => { const f = !body.hidden; setFold(f); store.set(bk, f ? '1' : null); };
+        title.addEventListener('click', e => { if (e.target.closest('a')) return; flip(); });
+        title.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); flip(); } });
         blk.append(bh, body); wrap.append(blk);
       });
       const save = () => {
