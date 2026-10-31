@@ -1,7 +1,7 @@
 {
  "format": "event-flow",
  "version": 1,
- "exportedAt": "2026-10-31T10:45:01.883Z",
+ "exportedAt": "2026-10-31T16:50:22.013Z",
  "raw": {
   "settings": [
    {
@@ -140,7 +140,7 @@
    {
     "日期": "2026-11-07",
     "開始": "11:00",
-    "結束": "18:00",
+    "結束": "11:15",
     "議程": "球迷全面開放進場",
     "地點": "一、三壘側斜坡入口處"
    },
@@ -307,9 +307,9 @@
     "日期": "2026-11-07",
     "開始": "09:15",
     "結束": "16:00",
-    "事項": "我還在前往澄清湖棒球場的路上",
+    "事項": "前往澄清湖棒球場",
     "地點": "",
-    "備註": "## **路上請注意安全**\n哼！我才不想知道場內正在發生什麼事咧😤",
+    "備註": "## **路上請注意安全**\n哼！我才不想知道場內正在發生什麼事咧😤\n[完成] 我已抵達澄清湖棒球場",
     "連結": "車輛慢看停|https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.30808-6/484048746_974436428208381_7329814461315449823_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=p526x296&_nc_cat=104&ccb=1-7&_nc_sid=127cfc&_nc_ohc=AcBw2opA8ogQ7kNvwFS6gPV&_nc_oc=AdpnG_VCVLP1I-oQTV1VVlTuwFZraPKXEMlAKvAvZhh2kS6lvia6wb1T-R48Y2rcF7c&_nc_zt=23&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=Xt9MSXJ6PDkxsbl3gLtsig&_nc_ss=7b2a8&oh=00_AQSQbsve7Fj9oO67XAtQWHDDF2c4uTA8_CQjOVRRRVnq6A&oe=6AEB8A85\n車輛慢看停|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.30808-6/481216801_617525071037791_7968888673163015839_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1347&ctp=s2048x1347&_nc_cat=106&ccb=1-7&_nc_sid=127cfc&_nc_ohc=OZxbkBXGsSIQ7kNvwGSEvTj&_nc_oc=AdpyeC9KPzqtKDOd3aHbJkAxWy3OSZzibrl7H0vR3fJyYj6MaSfD5y-AmOck-hx-m5M&_nc_zt=23&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=VGG0S3v0NUUl7cVX0qpZ9A&_nc_ss=7b2a8&oh=00_AQSQDPU9YADF-ZdnC88I1V03bdKoGVGqS7YEIstHtIYvMg&oe=6AEB70C1\n車輛慢看停|https://www.facebook.com/share/r/1KTCF5UFUA/"
    },
    {
@@ -319,8 +319,8 @@
     "結束": "18:00",
     "事項": "球迷全面開放進場",
     "地點": "一、三壘側斜坡入口處",
-    "備註": "場外攤位、主題商店與本後常態商店 11:00 開放，詳見下方「活動資訊」\n**入場時會發金鷹獎投票券**\n[ ] 填好投票券，投入本後商店外的投票箱\n\n所有場內、外活動及攤位皆需購票入場，**__當日現場不售票__**",
-    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0FV9BtmeN2T6dbD5xafcTmh3VLHuEgsDBGoPNAYNQU3ow49xg558XszHgHnGb7vgLl\n[查看投票券](https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/864951661_2577837766051303_6743027613506715250_n.png?stp=dst-jpg_tt6&cstp=mx1280x1280&ctp=s1280x1280&_nc_cat=100&ccb=1-7&_nc_sid=127cfc&_nc_ohc=tdexxPSbZAgQ7kNvwFB3a5W&_nc_oc=AdoLsd-gJQnQ-EkPnLZERU7qCBccqqry3k4dlcJcPlMVdt_yyUc-vIvQPPGg4YdKTtc&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=2HV4NF3nmMlHZ028CafoEQ&_nc_ss=7b2a8&oh=00_AQQQS0eBQCMbwjQ8qNHRXepN69TeHMrTlSsmgrbyM2Zc5g&oe=6AEB7F5D)"
+    "備註": "場外攤位、主題商店與本後常態商店 11:00 開放，詳見下方「活動資訊」\n**入場時會發金鷹獎投票券**\n[ ] 填好投票券，投入本後商店外的投票箱\n[ ] 領取入場贈品\n\n所有場內、外活動及攤位皆需購票入場，**__當日現場不售票__**\n[完成] 我已入場",
+    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0FV9BtmeN2T6dbD5xafcTmh3VLHuEgsDBGoPNAYNQU3ow49xg558XszHgHnGb7vgLl\n[查看投票券](https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/864951661_2577837766051303_6743027613506715250_n.png?stp=dst-jpg_tt6&cstp=mx1280x1280&ctp=s1280x1280&_nc_cat=100&ccb=1-7&_nc_sid=127cfc&_nc_ohc=tdexxPSbZAgQ7kNvwFB3a5W&_nc_oc=AdoLsd-gJQnQ-EkPnLZERU7qCBccqqry3k4dlcJcPlMVdt_yyUc-vIvQPPGg4YdKTtc&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=2HV4NF3nmMlHZ028CafoEQ&_nc_ss=7b2a8&oh=00_AQQQS0eBQCMbwjQ8qNHRXepN69TeHMrTlSsmgrbyM2Zc5g&oe=6AEB7F5D)\n[入場贈品](https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.99422-6/878022499_1457675662958881_162947954771402052_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=110&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_ohc=ObSo83koDeUQ7kNvwGnqj8Q&_nc_oc=AdqWW2NqCYW-CffaH7UJ6ose3rVVSu5dBV51Xq0Nwx5QZMtvvyZRw69tbTVcRQIHz04&_nc_zt=14&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=EOe3JEEDrkzQJUUneuDanA&_nc_ss=7b2a8&oh=00_AQT4NzYaXVAI5o1FXg4-SiJaU4udR0OPxm4vTgwjap8KRQ&oe=6AEBA7E8)"
    },
    {
     "身份": "鷹國皇家",
@@ -329,8 +329,8 @@
     "結束": "12:30",
     "事項": "鷹國皇家專屬簽名會",
     "地點": "場內三壘側紅土區（現場標示）",
-    "備註": "## **11:20 截止進場**（已參加會員限定活動者免重複報到）\n依當天鷹國皇家人數分四梯次，每梯次限時 15 分鐘\n\n## **準備**\n[ ] 台鋼雄鷹或 Wing Stars 官方商品\n[ ] 想好女孩簽名商品的署名名稱（須為文字）\n\n## **出席成員**\n選手：1曾子祐／3陳文杰／6王博玄／9王柏融／11陳正毅／17陳宇宏／20江承諺／24紀慶然／29張肇元／33陳致嘉／36湯家豪／39吳念庭／50高聖恩／59郭阜林／60劉時豪／66陳柏清／84許峻暘／88藍寅倫／93張誠恩／95永田颯太郎\nWing Stars：MINGO／林浠／一粒／艾琳／妡0／黃澄澄／昆昆／恬魚／圈圈／螢螢／筱雯／玖玖／毛毛／米亞／芃芃／千千／米妮／會晴／**瑈瑈／JC／NINA／尼莫／ET／芋頭（加碼）**\n\n## **注意事項**\n◆ 逾時未報到視同放棄參加資格\n◆ 每梯次出席成員 38+6 位，限時 15 分鐘，依工作人員指示排隊\n◆ 限簽官方商品，不含女孩卡、贈品、文宣品、球員卡；個人應援商品僅限本人簽名；署名名稱確認後不得更改\n◆ 同一位成員可重複簽名，每次限簽一項商品，簽完可再排隊\n◆ 簽名時不開放合照；號碼牌限一人使用，恕無法攜伴\n◆ 出席成員以當天實際狀況為主",
-    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0j9sipmijVQD81wvaT3onAhRwuZScqEHgKe7ASFzwNGWTyHz9SrUGHgWtW4WvEiENl"
+    "備註": "## **11:20 截止進場**（已參加會員限定活動者免重複報到）\n依當天鷹國皇家人數分四梯次，每梯次限時 15 分鐘\n\n## **準備**\n[ ] 台鋼雄鷹或 Wing Stars 官方商品\n[ ] 想好女孩簽名商品的署名名稱（須為文字）\n\n## **出席成員**\n- 選手：1曾子祐／3陳文杰／6王博玄／9王柏融／11陳正毅／17陳宇宏／20江承諺／24紀慶然／29張肇元／33陳致嘉／36湯家豪／39吳念庭／50高聖恩／59郭阜林／60劉時豪／66陳柏清／84許峻暘／88藍寅倫／93張誠恩／95永田颯太郎\n- Wing Stars：MINGO／林浠／一粒／艾琳／妡0／黃澄澄／昆昆／恬魚／圈圈／螢螢／筱雯／玖玖／毛毛／米亞／芃芃／千千／米妮／會晴／**瑈瑈／JC／NINA／尼莫／ET／芋頭（加碼）**\n\n## **注意事項**\n◆ 逾時未報到視同放棄參加資格\n◆ 每梯次出席成員 38+6 位，限時 15 分鐘，依工作人員指示排隊\n◆ 限簽官方商品，不含女孩卡、贈品、文宣品、球員卡；個人應援商品僅限本人簽名；署名名稱確認後不得更改\n◆ 同一位成員可重複簽名，每次限簽一項商品，簽完可再排隊\n◆ 簽名時不開放合照；號碼牌限一人使用，恕無法攜伴\n◆ 出席成員以當天實際狀況為主",
+    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0j9sipmijVQD81wvaT3onAhRwuZScqEHgKe7ASFzwNGWTyHz9SrUGHgWtW4WvEiENl\n簽名會名單|https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.99422-6/863105990_1844862203600001_8483944575072238728_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=107&ccb=1-7&_nc_sid=127cfc&_nc_ohc=ssQhPIlpjyUQ7kNvwFHes-B&_nc_oc=AdrYdQAVM_ChN6WEJKy0FWdvo1xHp3KZFPlF6dzQ7BCqrq9BUKE_1N0Ot3OKkQuc9yI&_nc_zt=14&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=s7IB5KJsCWSCO-fYYB45rw&_nc_ss=7b2a8&oh=00_AQTYBB0r6a8g87hMGrwqZiStD089TLDnSLYV_-IEdSmZfw&oe=6AEBE8D1"
    },
    {
     "身份": "全部",
@@ -339,8 +339,8 @@
     "結束": "14:25",
     "事項": "選手與 Wing Stars 簽名會（四梯次）",
     "地點": "場內；報到在一樓迴廊（售票處後方）",
-    "備註": "## **資格兌換：11/2（一）12:00 起，APP 1 點兌換**（每人限一梯次，共400名額滿為止）\n[ ] 已在 APP 完成資格兌換\n[ ] 單筆消費滿 $1,500（不可併單），結帳後出示 APP 兌換資格領號碼牌\n- 11/3～11/6：鷹HOUSE\n- 11/7 當天：一壘側主題商店\n- 一定要先取得 APP 資格，再完成消費\n- 號碼牌提前兌換完畢時，會在台鋼雄鷹官方社群限時動態公告\n[ ] 準備官方商品，想好女孩簽名的署名名稱\n## **報到地點：一樓迴廊（售票處後方）**，出示該梯次號碼牌\n\n## **第一梯次｜報到 12:55～13:05｜13:10 開始**\n選手：0董秉軒／17陳宇宏／20江承諺／26賴智垣／33陳致嘉／47許承恩／59郭阜林／67廖乙忠／70顏采丞／95永田颯太郎\nWing Stars：一粒／艾琳／恬魚／筱雯／米亞／會晴\n\n## **第二梯次｜報到 13:15～13:25｜13:30 開始**\n選手：3陳文杰／6王博玄／11陳正毅／16林家鋐／37顏清浤／42黃劼希／56黃紹睿／66陳柏清／74許育銘／88藍寅倫\nWing Stars：林浠／妡0／昆昆／圈圈／玖玖／米妮\n\n## **第三梯次｜報到 13:35～13:45｜13:50 開始**\n選手：8林威漢／9王柏融／19施子謙／29張肇元／44曾昱磬／50高聖恩／52韋宏亮／60劉時豪／85黃子豪／93張誠恩\nWing Stars：MINGO／黃澄澄／螢螢／毛毛／芃芃／千千\n\n## **第四梯次｜報到 13:55～14:05｜14:10 開始**\n選手：1曾子祐／5顏郁軒／12王柏傑／24紀慶然／36湯家豪／39吳念庭／41王躍霖／55伍祐城／84許峻暘／00朱盟\nWing Stars：瑈瑈／JC／NINA／尼莫／ET／芋頭\n\n## **注意事項**\n◆ 逾時未報到視同放棄參加資格\n◆ 每梯次 16 位成員、100 人，限時 15 分鐘，依工作人員指示排隊\n◆ 限簽官方商品，不含女孩卡、贈品、文宣品、球員卡；個人應援商品僅限本人簽名；署名名稱確認後不得更改\n◆ 同一位成員可重複簽名，每次限簽一項商品，簽完可再排隊\n◆ 簽名時不開放合照；號碼牌限一人使用，恕無法攜伴\n◆ 出席成員以當天實際狀況為主",
-    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid035nGfymwcLwRBCfVvT596rno8HUf5sL6tdFiouvKrNKLBbkdUzrPr3MGwwHPYmH8Sl"
+    "備註": "## **資格兌換：11/2（一）12:00 起，APP 1 點兌換**（每人限一梯次，共400名額滿為止）\n[ ] 已在 APP 完成資格兌換\n[ ] 單筆消費滿 $1,500（不可併單），結帳後出示 APP 兌換資格領號碼牌\n- 11/3(二)～11/6(五)：鷹HOUSE\n- 11/7(六)活動當天：一壘側主題商店\n- 一定要先取得 APP 資格，再完成消費\n[ ] 準備官方商品，想好女孩簽名的署名名稱\n## **報到地點：一樓迴廊（售票處後方）**，出示該梯次號碼牌\n\n## **第一梯次｜報到 12:55～13:05｜13:10 開始**\n- 選手：0董秉軒／17陳宇宏／20江承諺／26賴智垣／33陳致嘉／47許承恩／59郭阜林／67廖乙忠／70顏采丞／95永田颯太郎\n- Wing Stars：一粒／艾琳／恬魚／筱雯／米亞／會晴\n\n## **第二梯次｜報到 13:15～13:25｜13:30 開始**\n- 選手：3陳文杰／6王博玄／11陳正毅／16林家鋐／37顏清浤／42黃劼希／56黃紹睿／66陳柏清／74許育銘／88藍寅倫\n- Wing Stars：林浠／妡0／昆昆／圈圈／玖玖／米妮\n\n## **第三梯次｜報到 13:35～13:45｜13:50 開始**\n- 選手：8林威漢／9王柏融／19施子謙／29張肇元／44曾昱磬／50高聖恩／52韋宏亮／60劉時豪／85黃子豪／93張誠恩\n- Wing Stars：MINGO／黃澄澄／螢螢／毛毛／芃芃／千千\n\n## **第四梯次｜報到 13:55～14:05｜14:10 開始**\n- 選手：1曾子祐／5顏郁軒／12王柏傑／24紀慶然／36湯家豪／39吳念庭／41王躍霖／55伍祐城／84許峻暘／00朱盟\n- Wing Stars：瑈瑈／JC／NINA／尼莫／ET／芋頭\n\n## **注意事項**\n◆ 逾時未報到視同放棄參加資格\n◆ 每梯次 16 位成員、100 人，限時 15 分鐘，依工作人員指示排隊\n◆ 限簽官方商品，不含女孩卡、贈品、文宣品、球員卡；個人應援商品僅限本人簽名；署名名稱確認後不得更改\n◆ 同一位成員可重複簽名，每次限簽一項商品，簽完可再排隊\n◆ 簽名時不開放合照；號碼牌限一人使用，恕無法攜伴\n◆ 出席成員以當天實際狀況為主",
+    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid035nGfymwcLwRBCfVvT596rno8HUf5sL6tdFiouvKrNKLBbkdUzrPr3MGwwHPYmH8Sl\n球員1|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/858298712_1109288915156497_7217090906923847188_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=101&ccb=1-7&_nc_sid=127cfc&_nc_ohc=h4wNH1-9a-8Q7kNvwFO4lfi&_nc_oc=AdquaLYhqKNUQjj8UBcqgC5oyHj5yzurO_RgjzDiEcikFdiuu6eath4hjarqgc84sQc&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=5uPP8xb8b-W02uJ1lIYIOQ&_nc_ss=7b2a8&oh=00_AQTytboz6JCdWAhX8esbt3n3sMy-Lq4JHgsg1KtdxqZ02w&oe=6AEBDAF5\nWS1|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/865085811_1746233206448444_5839969181696845432_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=106&ccb=1-7&_nc_sid=127cfc&_nc_ohc=nfBCE8GVR-cQ7kNvwEFtSk_&_nc_oc=AdpWSxMuc2i3MjJTag_nu9hULxhkpJLN_WAmhkYP0VC3_1ig1LbiuhUSPQOS5PjNnhA&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=PISQl5GEYz1OPUxW7fN82A&_nc_ss=7b2a8&oh=00_AQSklAMsidMvSiXjEy22_Z6j49upFc-vK9DXP17OQcPa3w&oe=6AEBF03F\n球員2|https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.99422-6/863907813_1452526680397989_12031799547355362_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=110&ccb=1-7&_nc_sid=127cfc&_nc_ohc=23buOTynnpAQ7kNvwEh1yJi&_nc_oc=Ado0m2m5rEou2Ed9FSeGCcErRIEViqmabao112uLMl32YaiizVxlBmLzdgyJexYFYqk&_nc_zt=14&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=xiZFUXRAe8TgHhzzGG1AfQ&_nc_ss=7b2a8&oh=00_AQRkpHRb2lcRprjBc2JtbHlDuebiJwTAqcwd2ie1oPzciQ&oe=6AEBD7A1\nWS2|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/861358261_3187127135013928_3865268431657444559_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=105&ccb=1-7&_nc_sid=127cfc&_nc_ohc=YlhpYlYgv3oQ7kNvwFK0aH6&_nc_oc=Adr8PVS7KtSpZMgExXvyykb-mNp5rSYWmwVyjdB1ZyGKH5X3s6GptsfQg3txKhfZ3DQ&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=caThvlU49LtsegGoQuYrXw&_nc_ss=7b2a8&oh=00_AQQ3EesIyC3M8lZ_hI2BrGtfUN2tYZHRMTHQJZ_hnsdpvQ&oe=6AEC0061\n球員3|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/865116504_3249059998613129_7035802472361394198_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=103&ccb=1-7&_nc_sid=127cfc&_nc_ohc=NA7RYALr_JcQ7kNvwH2X4HV&_nc_oc=AdpeBMECj2xlsrhWad0bkzs96SdjHkNSHkHgYVEsE3I3i305oysLVS5CzthnMIw14vs&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=edANA2jcKpzc4bPB6C6pbQ&_nc_ss=7b2a8&oh=00_AQRATvOW6vCoQW-wAayg18-2j8A59R3mfp13AtHApuJ_Xg&oe=6AEBF42A\nWS3|https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.99422-6/861748296_1711441267214691_8050345201482787712_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=107&ccb=1-7&_nc_sid=127cfc&_nc_ohc=b9gqE5RPtw0Q7kNvwGWFBp0&_nc_oc=AdqjV-iSG1mHpRDFeXCMRMQ9caNsyqfajwB0MrUwdeQRGmIWfR6a5yCUxftlOApuaVA&_nc_zt=14&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=dZC-PvNQcfgtswmD-Mxc6Q&_nc_ss=7b2a8&oh=00_AQSD1IsLT6Qi1fUQuBUqx9xQnnS8czYHJ3LIHGTcLi4GwQ&oe=6AEBF55A\n球員4|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/861162987_2021067735233215_7577735960249172848_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=103&ccb=1-7&_nc_sid=127cfc&_nc_ohc=qQ-VYYzz9SgQ7kNvwEF35NH&_nc_oc=Adq2IT4C1hCrmQq-CAskvaDxSFR91QLmJvdG0cF6w3xpcBZ87sKKfIrCRWLf6dMt6no&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=FTtnesdv5xzj4XyA8dqyig&_nc_ss=7b2a8&oh=00_AQQves79tFWlW9zS3X1nfj8248gt-exXQRzKtYO1k2--6A&oe=6AEBE2D0\nWS4|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/858569096_1905293997483622_7303722927533447178_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=109&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_ohc=j0BajqCbjoAQ7kNvwGPakB5&_nc_oc=AdqnLM-9ogUql4YPBGSfV5C-SH2w8BIkgr6fn1PPXrR7MwyONQucnpexCzbE8fAAnO0&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=aXOcImUU3RmLURhM-LMSrQ&_nc_ss=7b2a8&oh=00_AQSKomq_x6nHGI-hHZ9D2eggGcYm_mC2k5EdKCWdtVh2Yw&oe=6AEBD410"
    },
    {
     "身份": "全部",
@@ -350,7 +350,7 @@
     "事項": "草地放風TIME（需中選）",
     "地點": "左、中外野指定區域；報到在 1F 正門入口",
     "備註": "## **預先報名、抽籤制：收到 APP 中選通知才有參加資格**\n[ ] 11/2 前已填寫報名表單\n[ ] 已收到台鋼雄鷹 APP 中選通知（11/3 起陸續發送）\n\n[ ] **第一梯次｜13:10～13:40**（13:10 報到截止，逾時不候）\n[ ] **第二梯次｜13:50～14:20**（13:50 報到截止，逾時不候）\n報到：澄清湖棒球場 1F 正門入口處（需出示當日門票）\n\n※ 有參加簽名會的人，請勿報名時間重疊的梯次（活動中無法提早離場）\n\n## **注意事項**\n◆ 僅開放左、中外野指定區域\n◆ 離開活動區域（包括去廁所）視為離場，無法再次入場\n◆ 可躺臥、帶野餐墊、拍照、傳接球；禁止影響他人安全的危險動作\n◆ 場內禁止飲食（可飲水），禁止穿跟鞋，不開放寵物\n◆ 雨天或場地狀況不佳可能調整或取消，請留意現場公告",
-    "連結": "報名表單|https://forms.gle/yz2Nos5jL11VHkJeA\nhttps://www.facebook.com/TSGHAWKS/posts/pfbid0X12tCkfHnrR4WgjyPavbNY1F4mPZggrRjhFzQYqh2gmDJnpugavpB5ST365KaE6Rl"
+    "連結": "報名表單|https://forms.gle/yz2Nos5jL11VHkJeA\nhttps://www.facebook.com/TSGHAWKS/posts/pfbid0X12tCkfHnrR4WgjyPavbNY1F4mPZggrRjhFzQYqh2gmDJnpugavpB5ST365KaE6Rl\n查看活動地圖|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/867110520_2416124255863488_6003213430844677393_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=106&ccb=1-7&_nc_sid=127cfc&_nc_ohc=AvZx4v_Caw0Q7kNvwHWdg8l&_nc_oc=AdpVT_5QOjH7obAt0yYw6F6H0pZWAam9zdz1yjT66jgJmdtCVMQYILHxWS7C_40pTQA&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=2IiM4RBWsUvN9XpRrCnL_w&_nc_ss=7b2a8&oh=00_AQRDGhT7RJ0QHT-s_cejhjc4i8KyCVj5JgvYzL3ihoY_QA&oe=6AEBD27A"
    },
    {
     "身份": "全部",
@@ -360,7 +360,7 @@
     "事項": "應援舞台活動",
     "地點": "一、三壘側",
     "備註": "- 14:35｜Wing Stars 舞蹈表演 @一、三壘側\n- 14:40｜鷹家兄妹 SHOW @一、三壘側\n- 14:45｜有鷹來應援　一壘側：高聖恩、藍寅倫／三壘側：永田颯太郎\n- 14:50｜新秀鷹 THE HOUSE @一壘側（小鷹首度登台）\n- 15:00｜**金鷹獎頒獎典禮** @一壘側，揭曉「流量密碼」「最佳帥潮」票選結果\n- 15:30｜台鋼大歌廳 @一、三壘側輪流，一起大唱《做伙拚》",
-    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid035nGfymwcLwRBCfVvT596rno8HUf5sL6tdFiouvKrNKLBbkdUzrPr3MGwwHPYmH8Sl"
+    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid035nGfymwcLwRBCfVvT596rno8HUf5sL6tdFiouvKrNKLBbkdUzrPr3MGwwHPYmH8Sl\n舞台活動|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/859683142_1152316733880996_1577890546535954517_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=102&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_ohc=eUQYzT_y6gwQ7kNvwHsxu75&_nc_oc=AdqgAZzYcxr_N-5pcxUts77Mro4t0-Y6Kx5Dc6SYXdoF7O3URc4mX3eAjnofYVzGq6M&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=iEKBQlOua8YpZDoQ2jW8qg&_nc_ss=7b2a8&oh=00_AQRX81QcoR5YWm9rJsdK0rqkKvZrhcBfXIK3MzctDGQqxA&oe=6AEBDF7F\n流量密碼獎，入圍的有～|https://www.facebook.com/share/v/1N4fzh278m/"
    },
    {
     "身份": "全部",
@@ -371,6 +371,36 @@
     "地點": "澄清湖棒球場",
     "備註": "**台鋼綠 vs. 雄鷹白**\n三局制樂樂棒球趣味競賽，由選手和 Wing Stars 組隊出賽\n※ 天候不佳時，主辦單位可能調整場地，請留意現場公告\n・鷹TV 提供轉播",
     "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid07xjnCuixGAC8LsZWdctBeFLjKMCMUfSM7UjowqG2tH6WnQt49qFLgV4NMTZ8fJ5tl"
+   },
+   {
+    "身份": "全部",
+    "日期": "2026-11-07",
+    "開始": "11:15",
+    "結束": "12:00",
+    "事項": "感情奧少年 feat. 佩霈",
+    "地點": "場外舞台",
+    "備註": "",
+    "連結": ""
+   },
+   {
+    "身份": "全部",
+    "日期": "2026-11-07",
+    "開始": "12:00",
+    "結束": "13:00",
+    "事項": "球迷卡拉OK（現場報名，限 20 位）",
+    "地點": "場外舞台",
+    "備註": "",
+    "連結": ""
+   },
+   {
+    "身份": "全部",
+    "日期": "2026-11-07",
+    "開始": "13:00",
+    "結束": "14:00",
+    "事項": "神秘K歌嘉賓（知名兄妹檔、快樂崇拜團長、打狗祭登台樂團🥷）",
+    "地點": "場外舞台",
+    "備註": "",
+    "連結": ""
    }
   ],
   "info": [
@@ -387,7 +417,7 @@
     "標題": "門票與入場",
     "時間": "",
     "地點": "",
-    "內容": "**票價**：300 元（全票、半票同價）／身心優待與陪同票 150 元\n[!] **當日現場不提供購票及補票，請務必提前購買**\n所有場內、外活動及攤位皆需購票入場\n## 入場時間與地點\n・會員專屬活動：09:15～10:30（10:30 截止進場），1F 正門入口\n・一般球迷：11:00 起，一、三壘側斜坡入口",
+    "內容": "**票價**：300 元（全票、半票同價）／身心優待與陪同票 150 元\n[!] 當日現場**__不提供__**購票及補票，請務必提前購買\n所有場內、外活動及攤位皆需購票入場\n## 入場時間與地點\n・會員專屬活動：09:15～10:30（10:30 截止進場），1F 正門入口\n・一般球迷：11:00 起，一、三壘側斜坡入口",
     "連結": "購票網站|https://ticket.tsghawks.com/\n售票資訊|https://www.facebook.com/TSGHAWKS/posts/pfbid02UWskJUnpb8gGSiANpadM3QwhkH58zwE9EpYVWgeZF9tAjZ7oBK2vsLSK5tWcJ8njl"
    },
    {
@@ -395,7 +425,7 @@
     "標題": "限量進場贈品",
     "時間": "入場時",
     "地點": "各入口",
-    "內容": "每張有價票券限領一次，限量發放，送完為止\n[ ] 有鷹來同樂紀念飄帶 1 個\n[ ] 19號喬伊鮮乳 X 台鋼雄鷹 聯名 TAKAO 白脫蛋白飲 1 瓶\n[ ] 同樂刮刮卡 1 張\n[ ] 乖乖聯名餅乾 2 包（口味隨機）\n[ ] 立頓氣泡茶 1 瓶（口味隨機）\n[!] 進場時請當場確認贈品數量與狀況，入場後不補發、不換發",
+    "內容": "每張有價票券限領一次，限量發放，送完為止\n[ ] 有鷹來同樂紀念飄帶 1 個\n[ ] 19號喬伊鮮乳 X 台鋼雄鷹 聯名 TAKAO 白脫蛋白飲 1 瓶\n[ ] 同樂刮刮卡 1 張\n[ ] 乖乖聯名餅乾 2 包（口味隨機）\n[ ] 立頓氣泡茶 1 瓶（口味隨機）\n[!] 進場時**__請當場確認__**贈品數量與狀況，入場後不補發、不換發",
     "連結": "入場贈品|https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.99422-6/878022499_1457675662958881_162947954771402052_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=110&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_ohc=ObSo83koDeUQ7kNvwGnqj8Q&_nc_oc=AdqWW2NqCYW-CffaH7UJ6ose3rVVSu5dBV51Xq0Nwx5QZMtvvyZRw69tbTVcRQIHz04&_nc_zt=14&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=EOe3JEEDrkzQJUUneuDanA&_nc_ss=7b2a8&oh=00_AQT4NzYaXVAI5o1FXg4-SiJaU4udR0OPxm4vTgwjap8KRQ&oe=6AEBA7E8"
    },
    {
@@ -404,7 +434,7 @@
     "時間": "開放入場後～17:00",
     "地點": "2F 平台會員中心",
     "內容": "**鷹國皇家、鷹國尊爵、鷹國親子、鷹國人**會員皆可領取\n到現場出示會員 APP 裡的「兌換 QR Code」，經工作人員核銷後領取\n[ ] 已領取會員卡造型磁鐵\n\n**同時擁有 2 種以上會員資格**：兌換券會依會員資格分開發送，領取時請分別出示各自的 QR Code\n※ 當天不方便領取也沒關係，之後會另外公布其他領取時間與地點，請留意粉絲專頁公告",
-    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0YjQ111GAxueTQTBqgaBYkpoKXahNadmgRpCmD55tXgmoPzpeC1z4T8yz7Dp8CtVCl"
+    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0YjQ111GAxueTQTBqgaBYkpoKXahNadmgRpCmD55tXgmoPzpeC1z4T8yz7Dp8CtVCl\n造型磁鐵|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/855267268_1697551722091325_654509925785993408_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=105&ccb=1-7&_nc_sid=127cfc&_nc_ohc=Z7eOwrvzZKgQ7kNvwGY7sLz&_nc_oc=AdqiS7e88quDJBjbARTo0k6cbqK_jVges4U_85zJVs1xs57xuPjhFGp3cE46zjN77Y0&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=5Z51J1g_4QptJm9ilTEjCQ&_nc_ss=7b2a8&oh=00_AQQf_K8YnpkFWj1lmfHg6AsYZX9dzp5jWL_gIZ5tI1qsFA&oe=6AEBDB10"
    },
    {
     "分類": "會員專屬",
@@ -412,7 +442,7 @@
     "時間": "開放入場後～16:30",
     "地點": "2F 場外攤位",
     "內容": "**鷹國皇家、鷹國尊爵、鷹國親子、鷹國人**出示「會員卡 QR Code」，每項會員資格可免費挑戰一次\n[ ] 已完成套圈圈挑戰\n[ ] 有抽獎券：16:30 後看大螢幕公布，當日到 2F 平台會員中心領獎\n## 遊戲方式\n**累積分數換獎品**：每次套中的分數加總，依最終分數兌換商品、主題日入場贈品、合作廠商獎品，分數愈高獎品愈好\n**特別獎抽獎**：累積分數達指定分數，再得 1 張抽獎券\n**APP 點數加碼**：現場不定時開放用 10 點 APP 點數再挑戰一次，有開放時__現場攤位會張貼公告__\n## 特別獎\n- Philips 飛利浦聲霸\n- Shark 電扇\n- 森森燒肉 珍饌海陸雙人套餐\n- 球員簽名大球\n- 親簽拍立得\n- 神祕小禮\n## 注意事項\n- **同時有兩種以上會員資格，__出示 QR Code 時請主動告知__**；遊戲完成離開後，視為放棄該資格的機會，不補發圈圈\n- 活動與兌獎限會員本人，須出示會員卡 QR Code\n- **特別獎限當日離場前到會員中心領取**，不能改天或代領\n- 獎品以現場為準，部分數量有限，送完為止",
-    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid025LcFMqkwHmcvknPPMBwvBNpLqovgiRoMSxo5heqj4rCbKXP3KbTGkPxFLSa5XE4Xl"
+    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid025LcFMqkwHmcvknPPMBwvBNpLqovgiRoMSxo5heqj4rCbKXP3KbTGkPxFLSa5XE4Xl\n套圈圈挑戰|https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.99422-6/865532171_4670680883255965_3118514865003988265_n.png?stp=dst-jpg_tt6&cstp=mx2048x2048&ctp=s2048x2048&_nc_cat=111&ccb=1-7&_nc_sid=127cfc&_nc_ohc=E0bL3-qfOSQQ7kNvwEGSYx-&_nc_oc=Ado951wicL_RCjfnEp8oxh65vbWBHNzwE40ctv-A_jSVbERNgYGGB696yy3MIcIGKmg&_nc_zt=14&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=CnzSdZl68mS68ypXshSIbA&_nc_ss=7b2a8&oh=00_AQS1VzE6vPIfl3MSbTNr5CP5QCRHE11PNyYO2JyYsN7u0Q&oe=6AEBDFFE"
    },
    {
     "分類": "場內攤位",
@@ -428,7 +458,7 @@
     "時間": "",
     "地點": "本後商店外",
     "內容": "- 入場時發放投票券，票選「流量密碼獎」「最佳帥潮獎」，填寫後投入投票箱即完成投票。得獎者在 15:00 金鷹獎頒獎典禮揭曉。\n[!] **記得投票**\n「流量密碼獎」候選：\n- **黃劼希** 緊身衣\n- **藍寅倫** 心動叔刻\n- **紀慶然** 表情包\n- **王柏融 吳念庭** 影帝\n- **劉時豪** ㄤㄤㄤ\n- **鷹家兄妹** 大明星\n「最佳帥潮獎」自行填寫",
-    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0FV9BtmeN2T6dbD5xafcTmh3VLHuEgsDBGoPNAYNQU3ow49xg558XszHgHnGb7vgLl\n查看投票券|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/864951661_2577837766051303_6743027613506715250_n.png?stp=dst-jpg_tt6&cstp=mx1280x1280&ctp=s1280x1280&_nc_cat=100&ccb=1-7&_nc_sid=127cfc&_nc_ohc=tdexxPSbZAgQ7kNvwFB3a5W&_nc_oc=AdoLsd-gJQnQ-EkPnLZERU7qCBccqqry3k4dlcJcPlMVdt_yyUc-vIvQPPGg4YdKTtc&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=2HV4NF3nmMlHZ028CafoEQ&_nc_ss=7b2a8&oh=00_AQQQS0eBQCMbwjQ8qNHRXepN69TeHMrTlSsmgrbyM2Zc5g&oe=6AEB7F5D"
+    "連結": "https://www.facebook.com/TSGHAWKS/posts/pfbid0FV9BtmeN2T6dbD5xafcTmh3VLHuEgsDBGoPNAYNQU3ow49xg558XszHgHnGb7vgLl\n投票券|https://scontent.fkhh1-1.fna.fbcdn.net/v/t39.99422-6/864951661_2577837766051303_6743027613506715250_n.png?stp=dst-jpg_tt6&cstp=mx1280x1280&ctp=s1280x1280&_nc_cat=100&ccb=1-7&_nc_sid=127cfc&_nc_ohc=tdexxPSbZAgQ7kNvwFB3a5W&_nc_oc=AdoLsd-gJQnQ-EkPnLZERU7qCBccqqry3k4dlcJcPlMVdt_yyUc-vIvQPPGg4YdKTtc&_nc_zt=14&_nc_ht=scontent.fkhh1-1.fna&_nc_gid=2HV4NF3nmMlHZ028CafoEQ&_nc_ss=7b2a8&oh=00_AQQQS0eBQCMbwjQ8qNHRXepN69TeHMrTlSsmgrbyM2Zc5g&oe=6AEB7F5D\n流量密碼獎，入圍的有～|https://www.facebook.com/share/v/1N4fzh278m/"
    },
    {
     "分類": "場外攤位",
@@ -515,7 +545,7 @@
     "標題": "沒人想看的說明書📜",
     "時間": "",
     "地點": "",
-    "內容": "## 初次使用\n[!] 建議用**__網頁瀏覽器__**開啟，並「加入主畫面」。從** *脆、LINE、臉書* **直接開啟時，記事本和勾選紀錄可能**不會**保留\n[!] 標題右邊有 ⠿ 的標記。**按住** ⠿ 上下拖動可以調整區塊順序\n[!] **長按**勾選項目或 • 條列項目，可以加入待完成事項，前面會出現 ★\n- 第一次打開會詢問你的身份，選好後顯示你的專屬流程\n- 點上方的身份按鈕，可以查看其他身份的流程；要更換自己的身份，點上方「我是 ○○」\n\n## 查看流程\n- 最上方的卡片會依現在時間，顯示進行中或下一個活動，以及倒數時間\n- 左右滑動卡片，或按「上一項」「下一項」查看前後活動；按「回到現在」回到目前的活動\n- 時間重疊時，卡片上會顯示「同時進行」，點名稱就能切換\n- 點「全天流程」裡的任一項，可以直接查看那個活動\n- 「活動資訊」的項目點一下就能展開，查看攤位、商店優惠等內容\n\n## 清單與標記\n- 點勾選框打勾，打勾後項目會變成灰色\n- 點項目文字可以加上刪除線，再點一次取消\n- 長按勾選項目或「•」條列項目，可以加入待完成事項，前面會出現 ★\n- 有外框的 ★ 項目是必看重點，會自動列入待完成事項\n\n## 待完成事項\n- 右下角的「★ 待完成」按鈕會顯示還沒完成的數量\n- 點開後可以直接打勾、點來源名稱跳到該活動，或按「移除」拿掉\n\n## 我的記事本\n- 在選擇的身份頁面的最下方，**只存在這支手機，其他人看不到**\n- 記事本支援粗體、勾選框、刪除線\n**編輯模式**：按「編輯」開始輸入。寫 `**粗體**`、`*斜體*`、`__底線__`、`~~刪除線~~`；一行開頭寫 `[ ]` 變成勾選框，寫 `-` 加一個空格變成條列項目\n**檢視模式**：按「完成」顯示排版後的內容，可以直接打勾、點文字加刪除線、長按加入待完成，變更會自動儲存\n\n## 其他\n- 上方「外觀」可以切換自動、淺色、深色\n- 點右上角的時鐘可以穿越時空，時鐘會變成桃紅色，方便活動前預覽當天流程；按「恢復實際時間」回到現實世界\n[!] **記事本、勾選紀錄和待完成事項 *__只會存在這支手機的瀏覽器裡__* **；換手機、清除瀏覽器資料或使用無痕模式時會消失",
+    "內容": "## 初次使用\n[!] 建議用**__網頁瀏覽器__**開啟，並「加入主畫面」。從** *脆、LINE、臉書* **直接開啟時，記事本和勾選紀錄可能**不會**保留\n[!] 標題右邊有骰到六 ⠿ 的標記。**按住** ⠿ 上下拖動可以調整區塊順序\n[!] **長按**勾選項目或 • 條列項目，可以加入待完成事項，前面會出現 ★\n- 第一次打開會詢問你的身份，選好後顯示你的專屬流程\n- 點上方的身份按鈕，可以查看其他身份的流程；要更換自己的身份，點上方「我是 ○○」\n\n## 查看流程\n- 最上方的卡片會依現在時間，顯示進行中或下一個活動，以及倒數時間\n- 左右滑動卡片，或按「上一項」「下一項」查看前後活動；按「回到現在」回到目前的活動\n- 時間重疊時，卡片上會顯示「同時進行」，點名稱就能切換\n- 點「全天流程」裡的任一項，可以直接查看那個活動\n- 「活動資訊」的項目點一下就能展開，查看攤位、商店優惠等內容\n\n## 清單與標記\n- 點勾選框打勾，打勾後項目會變成灰色\n- 點項目文字可以加上刪除線，再點一次取消\n- 長按勾選項目或「•」條列項目，可以加入待完成事項，前面會出現 ★\n- 有外框的 ★ 項目是必看重點，會自動列入待完成事項\n\n## 待完成事項\n- 右下角的「★ 待完成」按鈕會顯示還沒完成的數量\n- 點開後可以直接打勾、點來源名稱跳到該活動，或按「移除」拿掉\n\n## 我的記事本\n- 在選擇的身份頁面的最下方，**只存在這支手機，其他人看不到**\n- 記事本支援粗體、勾選框、刪除線\n**編輯模式**：按「編輯」開始輸入。寫 `**粗體**`、`*斜體*`、`__底線__`、`~~刪除線~~`；一行開頭寫 `[ ]` 變成勾選框，寫 `-` 加一個空格變成條列項目\n**檢視模式**：按「完成」顯示排版後的內容，可以直接打勾、點文字加刪除線、長按加入待完成，變更會自動儲存\n\n## 其他\n- 上方「外觀」可以切換自動、淺色、深色\n- 點右上角的時鐘可以穿越時空，時鐘會變成桃紅色，方便活動前預覽當天流程；按「恢復實際時間」回到現實世界\n[!] **記事本**、**勾選紀錄**和**待完成事項 *__只會存在這支手機的瀏覽器裡__* **；換手機、清除瀏覽器資料或使用無痕模式時會消失",
     "連結": ""
    }
   ]
