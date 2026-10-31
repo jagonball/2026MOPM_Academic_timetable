@@ -166,8 +166,10 @@ a.btn{text-decoration:none;display:inline-block}
 .also{margin:12px 0 0;font-size:14px;color:var(--muted)}
 .also .linkbtn{font-size:14px;margin-right:8px}
 .note a,.info-body a{color:var(--accent);word-break:break-all}
-.info-cat{font-size:13px;font-weight:700;color:var(--muted);margin:16px 0 2px}
-.info-cat:first-child{margin-top:0}
+.info-cat{display:flex;align-items:center;gap:12px;justify-content:center;text-align:center;font-size:14px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin:24px 0 6px}
+.info-cat::before,.info-cat::after{content:"";flex:1;height:1.5px;background:var(--accent);opacity:.35}
+.info-cat:first-child{margin-top:4px}
+.info-cat + details{border-top:0}
 .info details{border-top:1px solid var(--line)}
 .info summary{cursor:pointer;padding:10px 0;font-weight:700;list-style-position:outside}
 .info summary small{display:block;font-weight:400;font-size:13px;color:var(--muted)}
