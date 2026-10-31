@@ -87,6 +87,11 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
 .note .txt.struck,.todo .struck{text-decoration:line-through}
 .note li.imp .txt::before{content:"★ ";color:var(--accent)}
 .note .chk-head small{font-size:12px}
+.note .done-row{display:flex;align-items:center;gap:10px;margin:10px 0;padding:10px 12px;border-radius:8px;background:var(--surface);border:1.5px dashed var(--line);cursor:pointer;font-weight:700}
+.note .done-row input{flex:none;width:24px;height:24px;margin:0;accent-color:var(--accent)}
+.note .done-row.on{border-style:solid;border-color:var(--accent)}
+.note .done-row small{display:block;font-weight:400;font-size:12px;color:var(--accent)}
+.tl .row .donetime{display:block;font-size:13px;font-weight:700;color:var(--accent)}
 .note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0 4px;white-space:nowrap}
 .note .must{display:flex;align-items:flex-start;gap:8px;margin:8px 0;padding:8px 10px;border:1.5px solid var(--accent);border-radius:8px;background:var(--surface)}
 .note .must label{display:flex;flex:none;cursor:pointer}
@@ -166,8 +171,10 @@ a.btn{text-decoration:none;display:inline-block}
 .also{margin:12px 0 0;font-size:14px;color:var(--muted)}
 .also .linkbtn{font-size:14px;margin-right:8px}
 .note a,.info-body a{color:var(--accent);word-break:break-all}
-.info-cat{font-size:13px;font-weight:700;color:var(--muted);margin:16px 0 2px}
-.info-cat:first-child{margin-top:0}
+.info-cat{display:flex;align-items:center;gap:12px;justify-content:center;text-align:center;font-size:14px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin:24px 0 6px}
+.info-cat::before,.info-cat::after{content:"";flex:1;height:1.5px;background:var(--accent);opacity:.35}
+.info-cat:first-child{margin-top:4px}
+.info-cat + details{border-top:0}
 .info details{border-top:1px solid var(--line)}
 .info summary{cursor:pointer;padding:10px 0;font-weight:700;list-style-position:outside}
 .info summary small{display:block;font-weight:400;font-size:13px;color:var(--muted)}
@@ -591,9 +598,12 @@ const CONFIG = {
 
   /* ---------- 畫面 ---------- */
   function myTasks(){ return tasks.filter(t => t.staff === sel).sort((a,b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0); }
+  // 使用者用 [完成] 勾選框標記完成的流程項目（存在這支手機）
+  const doneKey = t => `taskdone:${SRC}:${t.staff}|${t.start}|${t.title}`;
+  const doneAt = t => Number(store.get(doneKey(t))) || 0;
   function autoIndex(list, n){
-    let i = list.findIndex(t => parse(t.start) <= n && n < parse(t.end)); if (i >= 0) return i;
-    i = list.findIndex(t => parse(t.start) > n); if (i >= 0) return i;
+    let i = list.findIndex(t => !doneAt(t) && parse(t.start) <= n && n < parse(t.end)); if (i >= 0) return i;
+    i = list.findIndex(t => !doneAt(t) && parse(t.start) > n); if (i >= 0) return i;
     return list.length - 1;
   }
   function stateOf(t, n){ const s = parse(t.start), e = parse(t.end); return n < s ? 'next' : n < e ? 'live' : 'past'; }
@@ -622,9 +632,9 @@ const CONFIG = {
     if (msg){ box.className = 'card now'; box.dataset.sig = ''; box.replaceChildren(el('p','empty',msg)); return; }
     const auto = autoIndex(list, n);
     const idx = viewIdx == null ? auto : Math.min(Math.max(viewIdx,0), list.length-1);
-    const t = list[idx], st = stateOf(t, n), s = parse(t.start), e = parse(t.end);
+    const t = list[idx], dn = doneAt(t), st = dn ? 'past' : stateOf(t, n), s = parse(t.start), e = parse(t.end);
     // 內容沒變時只更新倒數與進度條，避免每秒重畫打斷勾選
-    const sig = [sel, idx, auto, list.length, viewIdx == null, st, t.start, t.end, t.title, t.place, t.note, t.link, checksVer, uiVer, list.map((x,j) => j !== idx && stateOf(x,n) === 'live' ? j : '').join(',')].join('\u0001');
+    const sig = [sel, idx, auto, list.length, viewIdx == null, st, t.start, t.end, t.title, t.place, t.note, t.link, checksVer, uiVer, dn, list.map((x,j) => j !== idx && !doneAt(x) && stateOf(x,n) === 'live' ? j : '').join(',')].join('\u0001');
     if (box.dataset.sig === sig){
       const big = box.querySelector('.big'); if (big) big.textContent = bigDur(st === 'live' ? e - n : s - n);
       const bi = box.querySelector('.bar i'); if (bi) bi.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%';
@@ -634,7 +644,7 @@ const CONFIG = {
     box.className = 'card now ' + (st === 'live' ? 'is-live' : st === 'next' ? 'is-next' : 'is-past');
     const frag = document.createDocumentFragment();
     const head = el('div');
-    const label = st === 'live' ? '進行中' : st === 'next' ? (idx === auto ? '下一項' : '稍後') : (idx === auto ? '今日任務已完成' : '已結束');
+    const label = dn ? `已完成 ${clockStr(dn)}` : st === 'live' ? '進行中' : st === 'next' ? (idx === auto ? '下一項' : '稍後') : (idx === auto ? '今日任務已完成' : '已結束');
     head.append(el('span','status',label), el('span','pos num',`${idx+1} / ${list.length}`));
     frag.append(head, el('h1','task-title', t.title));
     const dl = el('dl','meta');
@@ -647,7 +657,7 @@ const CONFIG = {
     }
     if (st === 'live'){ const bar = el('div','bar'); const i = el('i'); i.style.width = Math.min(100,(n - s)/(e - s)*100).toFixed(1)+'%'; bar.append(i); frag.append(bar); }
     if (st === 'live'){
-      const others = list.map((x,j) => ({x,j})).filter(o => o.j !== idx && stateOf(o.x, n) === 'live');
+      const others = list.map((x,j) => ({x,j})).filter(o => o.j !== idx && !doneAt(o.x) && stateOf(o.x, n) === 'live');
       if (others.length){
         const p = el('p','also','同時進行：');
         others.forEach(o => { const b = el('button','linkbtn',o.x.title); b.type = 'button'; b.onclick = () => go(o.j); p.append(b); });
@@ -753,6 +763,7 @@ const CONFIG = {
   }
   const ITEM_RE = /^(\s*(?:[-*・]\s*)?)\[\s*([xXvV✓✔]?)\s*\]\s*(.*)$/;
   const MUST_RE = /^\s*\[!\]\s*(.+)$/;     // [!] 必看重點
+  const DONE_RE = /^\s*\[\s*完成\s*\]\s*(.*)$/;  // [完成] 標記整個流程項目完成
   const BUL_RE = /^\s*-\s+(.+)$/;           // - 條列項目
   const mustKey = (taskKey, t, n) => `must:${SRC}:${taskKey}|${t}${n > 1 ? '#' + n : ''}`;
   const plainOf = t => t.replace(/`([^`]+)`/g,'$1').replace(/~~([^~]+?)~~/g,'$1').replace(/\*\*((?:[^*]|\*(?!\*))+?)\*\*/g,'$1').replace(/\*([^*\s](?:[^*]*?[^*\s])?)\*/g,'$1').replace(/__([^_]+?)__/g,'$1').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1').trim();
@@ -851,10 +862,35 @@ const CONFIG = {
       lab.append(cb); row.append(lab, el('span','star','★'), item);
       return row;
     };
+    // [完成]：勾選後這個流程項目不再顯示為進行中，全天流程顯示完成時間
+    const doneRow = label => {
+      const t = { staff: meta.staff, start: meta.start, title: meta.title };
+      const row = el('label','done-row'); const cb = el('input'); cb.type = 'checkbox';
+      const txt = el('span','done-txt');
+      const paint = () => {
+        const at = doneAt(t); cb.checked = !!at; row.classList.toggle('on', !!at);
+        txt.replaceChildren(); richText(txt, label || '標記這個項目已完成');
+        if (at) txt.append(el('small', null, `已完成・${clockStr(at)}`));
+      };
+      cb.onchange = () => {
+        store.set(doneKey(t), cb.checked ? String(now()) : null); paint();
+        toast(cb.checked ? '已標記完成' : '已取消完成');
+        uiVer++; lastAuto = -2; setTimeout(renderAll, 400);
+      };
+      paint(); row.append(cb, txt);
+      return row;
+    };
     // 把一段文字（多行）畫進 container
     const renderLines = (lines, container) => {
       let ul = null, bl = null;
       lines.forEach(line => {
+        const dm = line.match(DONE_RE);
+        if (dm){
+          ul = null; bl = null;
+          if (meta && meta.staff){ container.append(doneRow(dm[1].trim())); return; }
+          if (dm[1].trim()){ const p = el('p'); richText(p, dm[1].trim()); container.append(p); }
+          return;
+        }
         const mu = line.match(MUST_RE);
         if (mu){ ul = null; bl = null; container.append(mustRow(mu[1].trim())); return; }
         const m = line.match(ITEM_RE);
@@ -1237,10 +1273,13 @@ const CONFIG = {
     list.forEach((t,i) => {
       const d = t.start.slice(0,10);
       if (d !== day){ day = d; const h = el('li'); h.append(el('span','empty num', d.replace(/-/g,'/'))); h.style.padding = '8px 4px 2px'; h.style.fontSize = '13px'; ol.append(h); }
-      const li = el('li', stateOf(t,n) + (i === idx ? ' viewing' : ''));
+      const dt = doneAt(t);
+      const li = el('li', (dt ? 'past' : stateOf(t,n)) + (i === idx ? ' viewing' : ''));
       const row = el('button','row'); row.type = 'button';
       row.append(el('span','t num',hm(t.start)));
-      const c = el('span'); c.append(el('b',null,t.title), el('span',null,`${t.place}　至 ${hm(t.end)}`)); row.append(c);
+      const c = el('span'); c.append(el('b',null,t.title), el('span',null,`${t.place}　至 ${hm(t.end)}`));
+      if (dt) c.append(el('span','donetime',`✓ ${clockStr(dt)} 完成`));
+      row.append(c);
       row.onclick = () => { go(i); window.scrollTo({top:0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); };
       li.append(row); ol.append(li);
     });
